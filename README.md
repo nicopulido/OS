@@ -132,23 +132,81 @@ Suggested usage by topic:
 
 ## Contributing <a name = "contributing"></a>
 
-Contributions are welcome for improving clarity, fixing bugs, and adding educational examples.
+Contributions are welcome. Use this workflow to keep changes organized and easy to review.
 
-Contribution guide:
-
-1. Create a feature branch.
+### 1. Update the main branch
 
 ```bash
-git checkout -b feature/short-description
+git checkout main
+git pull
 ```
 
-2. Make focused, well-documented changes.
-3. Ensure your code builds and runs correctly.
-4. Commit with clear messages.
-5. Open a pull request with:
+This switches to `main` and updates your local branch with the latest remote changes.
 
-- What changed
-- Why it changed
-- How it was tested
+### 2. Create a feature branch
 
-Please keep contributions aligned with course goals and include simple reproduction steps for any fixes or enhancements.
+```bash
+git checkout -b feature/nueva-feature
+```
+
+This creates and checks out a new branch from the current `main` state.
+
+### 3. Register your changes with commits
+
+Use the Conventional Commits style to keep history clear and easy to scan:
+
+- `feat`: a new feature (example: `feat: add round-robin scheduler controls`)
+- `fix`: a bug fix (example: `fix: correct waiting to ready transition`)
+- `docs`: documentation-only changes (example: `docs: update usage examples`)
+- `refactor`: code changes that improve structure without changing behavior
+- `test`: add or update tests
+- `chore`: maintenance tasks (configs, tooling, dependencies)
+
+A practical default is: `type: short description`.
+
+```bash
+git add .
+git commit -m "feat: nueva feature"
+```
+
+`git add .` moves modified files to staging, and `git commit` records a snapshot with author, date, and message.
+
+### 4. Push your branch to remote
+
+```bash
+git push origin feature/nueva-feature
+```
+
+This publishes your branch to the remote repository.
+
+Do this when you finish your development branch work and want to share it for review.
+
+### 5. Sync your branch with recent `main` changes
+
+```bash
+git checkout main
+git pull
+git checkout feature/nueva-feature
+git merge main
+```
+
+This brings the latest `main` updates into your feature branch and helps detect conflicts early.
+
+### 6. Merge the feature into `main`
+
+```bash
+git checkout main
+git merge feature/nueva-feature
+git push origin main
+```
+
+If there are no conflicts, Git integrates your feature commits into `main`. Then push `main` to publish the final merge.
+
+### Workflow summary
+
+1. Update project
+2. Create working branch
+3. Develop and commit
+4. Push branch
+5. Sync with `main`
+6. Final merge into `main`
