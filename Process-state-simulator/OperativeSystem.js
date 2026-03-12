@@ -55,6 +55,16 @@ export default class OperativeSystem {
     changeProcess(pid) {
         const pcb = this.processes.find(p => p.pid === pid);
         if (pcb) {
+            if (pcb.state === PROCESS_STATES.TERMINATED) {
+                console.log(`Process ${pcb.pid} is TERMINATED and cannot run.`);
+                return;
+            }
+
+            if (this.CPU.currentPCB && this.CPU.currentPCB.pid === pcb.pid) {
+                console.log(`Process ${pcb.pid} is already RUNNING.`);
+                return;
+            }
+
             if (this.CPU.currentPCB) {
                 this.CPU.currentPCB.state = PROCESS_STATES.READY;
                 console.log(`Process ${this.CPU.currentPCB.pid} is now in READY state.`);
@@ -64,6 +74,28 @@ export default class OperativeSystem {
             this.CPU.execute(pcb);
         } else {
             console.log(`No process found with PID ${pid}.`);
+        }
+    }
+
+    terminateProcessByPid(pid) {
+        const pcb = this.processes.find(p => p.pid === pid);
+
+        if (!pcb) {
+            console.log(`No process found with PID ${pid}.`);
+            return;
+        }
+
+        if (pcb.state === PROCESS_STATES.TERMINATED) {
+            console.log(`Process ${pcb.pid} is already TERMINATED.`);
+            return;
+        }
+
+        pcb.state = PROCESS_STATES.TERMINATED;
+        console.log(`Process ${pcb.pid} is now in TERMINATED state.`);
+
+        if (this.CPU.currentPCB && this.CPU.currentPCB.pid === pcb.pid) {
+            this.CPU.currentPCB = null;
+            console.log(`CPU released process ${pcb.pid}.`);
         }
     }
 }
