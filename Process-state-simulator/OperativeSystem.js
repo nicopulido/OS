@@ -57,8 +57,6 @@ export default class OperativeSystem {
         if (pcb) {
             if (this.CPU.currentPCB) {
                 this.CPU.currentPCB.state = PROCESS_STATES.READY;
-                this.processes.push(this.CPU.currentPCB);
-                this.CPU.currentPCB = null;
                 console.log(`Process ${this.CPU.currentPCB.pid} is now in READY state.`);
 
             }
