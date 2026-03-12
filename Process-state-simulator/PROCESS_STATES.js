@@ -5,3 +5,5 @@ const PROCESS_STATES = {
     WAITING: "WAITING",
     TERMINATED: "TERMINATED",
 };
+
+export default PROCESS_STATES;

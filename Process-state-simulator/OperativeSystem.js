@@ -1,4 +1,10 @@
-class OperativeSystem {
+import CPU from './CPU.js';
+import Scheduler from './Scheduler.js';
+import Process from './Process.js';
+import PCB from './PCB.js';
+import PROCESS_STATES from './PROCESS_STATES.js';
+
+export default class OperativeSystem {
     constructor() {
         this.processes = [];
         this.CPU = new CPU();

@@ -1,4 +1,4 @@
-class CPU {
+export default class CPU {
     constructor() {
         this.currentPCB = null;
     }
@@ -16,5 +16,4 @@ class CPU {
             console.log("No process is currently running on the CPU.");
         }
     }
-
 }
