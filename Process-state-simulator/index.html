@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulador de Procesos</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="container">
+    <h1>Simulador de Procesos</h1>
+
+    <section class="card">
+      <h2>Crear proceso</h2>
+      <form id="create-process-form" class="grid-form">
+        <label for="process-id">ID</label>
+        <input id="process-id" name="process-id" type="number" min="1" required>
+
+        <label for="process-name">Nombre</label>
+        <input id="process-name" name="process-name" type="text" maxlength="40" required>
+
+        <button type="submit">Crear proceso</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Cambiar proceso</h2>
+      <div class="switch-row">
+        <select id="process-select" aria-label="Seleccionar proceso">
+          <option value="">Sin procesos</option>
+        </select>
+        <button id="switch-process-btn" type="button">Cambiar</button>
+      </div>
+      <p id="running-process">En ejecucion: ninguno</p>
+    </section>
+
+    <section class="card">
+      <h2>Simulador de raton</h2>
+      <div class="mouse-buttons">
+        <button id="left-click-btn" type="button">Boton izquierdo</button>
+        <button id="right-click-btn" type="button">Boton derecho</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Procesos</h2>
+      <ul id="process-list" class="process-list"></ul>
+    </section>
+
+    <section class="card">
+      <h2>Eventos</h2>
+      <ul id="event-log" class="event-log"></ul>
+    </section>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
