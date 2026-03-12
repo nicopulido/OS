@@ -54,4 +54,19 @@ class OperativeSystem {
         }
         this.schedule();
     }
+
+    changeProcess(pid) {
+        const pcb = this.processes.find(p => p.pid === pid);
+        if (pcb) {
+            if (this.CPU.currentPCB) {
+                this.CPU.currentPCB.state = PROCESS_STATES.READY;
+                console.log(`Process ${this.CPU.currentPCB.pid} is now in READY state.`);
+            }
+            pcb.state = PROCESS_STATES.RUNNING;
+            console.log(`Process ${pcb.pid} is now in RUNNING state.`);
+            this.CPU.execute(pcb);
+        } else {
+            console.log(`No process found with PID ${pid}.`);
+        }
+    }
 }
