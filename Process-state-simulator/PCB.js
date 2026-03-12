@@ -6,7 +6,7 @@ export { Process, PROCESS_STATES };
 class PCB {
     constructor(process) {
         this.pid = process.id;
-        this.state = 'READY'; 
+        this.state =  PROCESS_STATES.NEW; 
         this.programCounter = 0;
         this.registers = {};
     }
