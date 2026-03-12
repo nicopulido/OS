@@ -19,10 +19,24 @@ body {
 }
 
 .container {
-  width: min(900px, 92vw);
+  width: min(1200px, 94vw);
   margin: 2rem auto;
+}
+
+.dashboard {
+  display: grid;
+  grid-template-columns: minmax(320px, 420px) minmax(420px, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.panel {
   display: grid;
   gap: 1rem;
+}
+
+.panel-monitor {
+  grid-template-rows: auto minmax(320px, 1fr);
 }
 
 h1,
@@ -35,6 +49,18 @@ h2 {
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 1rem;
+}
+
+.console-card {
+  height: 420px;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.process-card {
+  height: 320px;
+  display: grid;
+  grid-template-rows: auto 1fr;
 }
 
 .grid-form {
@@ -52,6 +78,20 @@ h2 {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 0.75rem;
+}
+
+.tick-controls {
+  display: grid;
+  grid-template-columns: 160px 140px;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.tick-buttons {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .mouse-buttons {
@@ -80,21 +120,61 @@ button:hover {
   background: var(--accent-strong);
 }
 
+button:disabled,
+input:disabled,
+select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .process-list,
-.event-log {
-  list-style: none;
+.console-output {
   margin: 0;
+}
+
+.process-list {
+  list-style: none;
   padding: 0;
   display: grid;
   gap: 0.45rem;
+  overflow-y: auto;
 }
 
-.process-list li,
-.event-log li {
+.process-list li {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 0.5rem 0.7rem;
   background: #fff;
+}
+
+.console-output {
+  padding: 0.75rem;
+  background: #0b1020;
+  color: #d1fae5;
+  border: 1px solid #1f2937;
+  border-radius: 8px;
+  height: 100%;
+  overflow-y: auto;
+  font-family: "Courier New", monospace;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 900px) {
+  .dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  .panel-monitor {
+    grid-template-rows: auto auto;
+  }
+
+  .console-card {
+    height: 320px;
+  }
+
+  .process-card {
+    height: 260px;
+  }
 }
 
 @media (max-width: 640px) {
@@ -107,6 +187,10 @@ button:hover {
   }
 
   .switch-row {
+    grid-template-columns: 1fr;
+  }
+
+  .tick-controls {
     grid-template-columns: 1fr;
   }
 }
