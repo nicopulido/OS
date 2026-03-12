@@ -169,22 +169,30 @@ async function runTicks(totalTicks) {
 }
 
 function renderProcessOptions() {
+  const previousValue = processSelect.value;
   processSelect.innerHTML = '';
 
-  if (os.processes.length === 0) {
+  const readyProcesses = os.processes.filter((pcb) => pcb.state === 'READY');
+
+  if (readyProcesses.length === 0) {
     const emptyOption = document.createElement('option');
     emptyOption.value = '';
-    emptyOption.textContent = 'Sin procesos';
+    emptyOption.textContent = 'Sin procesos disponibles';
     processSelect.appendChild(emptyOption);
     return;
   }
 
-  os.processes.forEach((pcb) => {
+  readyProcesses.forEach((pcb) => {
     const option = document.createElement('option');
     option.value = String(pcb.pid);
     option.textContent = `PID ${pcb.pid} - ${pcb.process.name}`;
     processSelect.appendChild(option);
   });
+
+  const stillExists = [...processSelect.options].some((o) => o.value === previousValue);
+  if (previousValue && stillExists) {
+    processSelect.value = previousValue;
+  }
 }
 
 function renderProcessList() {
