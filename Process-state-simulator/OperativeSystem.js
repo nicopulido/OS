@@ -1,4 +1,5 @@
 import CPU from './CPU.js';
+import Disk from './Disk.js';
 import Scheduler from './Scheduler.js';
 import Process from './Process.js';
 import PCB from './PCB.js';
@@ -8,6 +9,7 @@ export default class OperativeSystem {
     constructor() {
         this.processes = [];
         this.CPU = new CPU();
+        this.disk = new Disk();
         this.scheduler = new Scheduler();
     }
     
@@ -23,12 +25,18 @@ export default class OperativeSystem {
     }
 
     schedule() {
+        if (this.CPU.currentPCB) {
+            return this.CPU.currentPCB;
+        }
+
         const nextPCB = this.scheduler.selectNextProcess(this.processes);
         if (nextPCB) {
             nextPCB.state = PROCESS_STATES.RUNNING;
             console.log(`Process ${nextPCB.pid} is now in RUNNING state.`);
             this.CPU.execute(nextPCB);
         }
+
+        return nextPCB;
 
     }
 
@@ -40,6 +48,45 @@ export default class OperativeSystem {
         } else {
             console.log("No process is currently running to set to WAITING state.");
         }
+    }
+
+    startDiskRead() {
+        if (this.disk.currentPCB) {
+            console.log(`Disk is already reading for process ${this.disk.currentPCB.pid}.`);
+            return null;
+        }
+
+        if (!this.CPU.currentPCB) {
+            console.log('No process is currently running to start a disk read.');
+            return null;
+        }
+
+        const pcb = this.CPU.currentPCB;
+        pcb.state = PROCESS_STATES.WAITING;
+        this.CPU.currentPCB = null;
+        this.disk.startRead(pcb);
+
+        console.log(`Process ${pcb.pid} requested disk read and moved to WAITING state.`);
+        this.schedule();
+        return pcb;
+    }
+
+    completeDiskRead() {
+        if (!this.disk.currentPCB) {
+            console.log('No disk read is currently active.');
+            return null;
+        }
+
+        const pcb = this.disk.completeRead();
+        pcb.state = PROCESS_STATES.READY;
+
+        console.log(`Disk read for process ${pcb.pid} completed. Process is now in READY state.`);
+
+        if (!this.CPU.currentPCB) {
+            this.schedule();
+        }
+
+        return pcb;
     }
     
     terminateProcess() {
@@ -65,6 +112,11 @@ export default class OperativeSystem {
         if (pcb) {
             if (pcb.state === PROCESS_STATES.TERMINATED) {
                 console.log(`Process ${pcb.pid} is TERMINATED and cannot run.`);
+                return;
+            }
+
+            if (pcb.state === PROCESS_STATES.WAITING) {
+                console.log(`Process ${pcb.pid} is in WAITING state and cannot run.`);
                 return;
             }
 
