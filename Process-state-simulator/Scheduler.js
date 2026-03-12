@@ -4,7 +4,6 @@ export default class Scheduler {
 
     
     selectNextProcess(processes) {
-        // Busca el primer proceso READY en el arreglo original
         const readyIndex = processes.findIndex(
             (pcb) => pcb.state === PROCESS_STATES.READY
         );
@@ -13,8 +12,7 @@ export default class Scheduler {
             console.log('No processes in READY state to schedule.');
             return null;
         }
-
-        // Lo quita del arreglo original (this.processes del OS)
+        
         const [nextProcess] = processes.splice(readyIndex, 1);
 
         console.log(
