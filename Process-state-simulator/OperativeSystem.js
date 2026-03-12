@@ -45,4 +45,13 @@ class OperativeSystem {
             console.log("No process is currently running to terminate.");
         }
     }
+
+    changeContext() {
+        if (this.CPU.currentPCB) {
+            this.CPU.currentPCB.state = PROCESS_STATES.READY;
+            console.log(`Process ${this.CPU.currentPCB.pid} is now in READY state.`);
+            this.CPU.currentPCB = null;
+        }
+        this.schedule();
+    }
 }
