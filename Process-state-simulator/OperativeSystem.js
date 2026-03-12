@@ -44,8 +44,16 @@ export default class OperativeSystem {
     
     terminateProcess() {
         if (this.CPU.currentPCB) {
+            const terminatedPid = this.CPU.currentPCB.pid;
             this.CPU.currentPCB.state = PROCESS_STATES.TERMINATED;
-            console.log(`Process ${this.CPU.currentPCB.pid} is now in TERMINATED state.`);
+            console.log(`Process ${terminatedPid} is now in TERMINATED state.`);
+
+            const index = this.processes.findIndex(p => p.pid === terminatedPid);
+            if (index !== -1) {
+                this.processes.splice(index, 1);
+                console.log(`Process ${terminatedPid} removed from process table.`);
+            }
+
             this.CPU.currentPCB = null;
         } else {
             console.log("No process is currently running to terminate.");
