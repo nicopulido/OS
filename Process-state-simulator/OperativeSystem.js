@@ -102,6 +102,7 @@ export default class OperativeSystem {
             }
 
             this.CPU.currentPCB = null;
+            this.schedule();
         } else {
             console.log("No process is currently running to terminate.");
         }
