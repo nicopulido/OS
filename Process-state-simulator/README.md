@@ -26,11 +26,16 @@ There is no heavy setup required for a basic run.
 
 - A modern browser (`Chrome`, `Firefox`, or `Edge`)
 - `git` (to clone the repository)
+- One of the following to serve the project locally:
+  - **Node.js** `v18+` (includes `npx`, no extra install needed)
+  - **Python** `3+`
 
 Check installed versions:
 
 ```bash
 git --version
+node --version   # if using Node.js
+python3 --version  # if using Python
 ```
 
 ### Installing
@@ -42,11 +47,29 @@ git clone https://github.com/<your-user>/OS.git
 cd OS/Process-state-simulator
 ```
 
-2. Open the simulator entry file in your browser.
+2. No additional dependencies need to be installed. The project uses only vanilla HTML, CSS, and JavaScript.
 
-```text
-Open index.html
+### Running locally
+
+Choose one of the following options to serve the project:
+
+**Option A — Node.js (`npx serve`)**
+
+```bash
+npx serve .
 ```
+
+Then open your browser at `http://localhost:3000`.
+
+**Option B — Python built-in server**
+
+```bash
+python3 -m http.server 8080
+```
+
+Then open your browser at `http://localhost:8080`.
+
+> Opening `index.html` directly as a `file://` URL also works, but using a local server avoids potential browser restrictions with ES modules.
 
 3. Start interacting with the UI to simulate process creation, transitions, and context switches.
 
