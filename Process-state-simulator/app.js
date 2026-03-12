@@ -13,14 +13,21 @@ const tick1Btn = document.getElementById('tick-1-btn');
 const tick10Btn = document.getElementById('tick-10-btn');
 const tick1000Btn = document.getElementById('tick-1000-btn');
 const tickStatusLabel = document.getElementById('tick-status');
-const leftClickBtn = document.getElementById('left-click-btn');
-const rightClickBtn = document.getElementById('right-click-btn');
+const diskReadBtn = document.getElementById('disk-read-btn');
+const diskStatusLabel = document.getElementById('disk-status');
+const diskCounterLabel = document.getElementById('disk-counter');
 const processList = document.getElementById('process-list');
 const consoleOutput = document.getElementById('console-output');
 const runningProcessLabel = document.getElementById('running-process');
 const controls = document.querySelectorAll('button, input, select');
 
 let isTicking = false;
+let diskReadIntervalId = null;
+let diskReadTimeoutId = null;
+let diskReadElapsedMs = 0;
+
+const DISK_READ_DURATION_MS = 4000;
+const DISK_READ_STEP_MS = 100;
 
 function formatConsoleArg(arg) {
   if (typeof arg === 'string') {
@@ -69,6 +76,64 @@ function setControlsDisabled(disabled) {
 function getTickDelayMs() {
   const speed = Number(tickSpeedSelect.value);
   return 1000 / speed;
+}
+
+function formatSeconds(ms) {
+  return (ms / 1000).toFixed(1);
+}
+
+function clearDiskTimers() {
+  if (diskReadIntervalId) {
+    clearInterval(diskReadIntervalId);
+    diskReadIntervalId = null;
+  }
+
+  if (diskReadTimeoutId) {
+    clearTimeout(diskReadTimeoutId);
+    diskReadTimeoutId = null;
+  }
+}
+
+function renderDiskReadStatus() {
+  if (os.disk.currentPCB) {
+    diskStatusLabel.textContent = `Disco leyendo: PID ${os.disk.currentPCB.pid} - ${os.disk.currentPCB.process.name}`;
+    diskCounterLabel.textContent = `Tiempo de lectura: ${formatSeconds(diskReadElapsedMs)} s`;
+    return;
+  }
+
+  diskStatusLabel.textContent = 'Disco inactivo';
+  diskCounterLabel.textContent = 'Tiempo de lectura: 0.0 s';
+}
+
+function completeDiskRead() {
+  clearDiskTimers();
+  os.completeDiskRead();
+  diskReadElapsedMs = 0;
+  renderDiskReadStatus();
+  refreshUI();
+}
+
+function startDiskReadSimulation() {
+  const pcb = os.startDiskRead();
+
+  if (!pcb) {
+    renderDiskReadStatus();
+    refreshUI();
+    return;
+  }
+
+  diskReadElapsedMs = 0;
+  renderDiskReadStatus();
+  refreshUI();
+
+  diskReadIntervalId = setInterval(() => {
+    diskReadElapsedMs = Math.min(diskReadElapsedMs + DISK_READ_STEP_MS, DISK_READ_DURATION_MS);
+    renderDiskReadStatus();
+  }, DISK_READ_STEP_MS);
+
+  diskReadTimeoutId = setTimeout(() => {
+    completeDiskRead();
+  }, DISK_READ_DURATION_MS);
 }
 
 async function runTicks(totalTicks) {
@@ -153,6 +218,7 @@ function refreshUI() {
   renderProcessOptions();
   renderProcessList();
   renderRunningProcess();
+  renderDiskReadStatus();
 }
 
 createForm.addEventListener('submit', (event) => {
@@ -192,12 +258,8 @@ terminateProcessBtn.addEventListener('click', () => {
   refreshUI();
 });
 
-leftClickBtn.addEventListener('click', () => {
-  tickStatusLabel.textContent = 'Raton: boton izquierdo presionado.';
-});
-
-rightClickBtn.addEventListener('click', () => {
-  tickStatusLabel.textContent = 'Raton: boton derecho presionado.';
+diskReadBtn.addEventListener('click', () => {
+  startDiskReadSimulation();
 });
 
 tick1Btn.addEventListener('click', () => {

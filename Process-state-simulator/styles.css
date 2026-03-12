@@ -106,6 +106,16 @@ h2 {
   flex-wrap: wrap;
 }
 
+.disk-readout {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.75rem;
+}
+
+.disk-readout p {
+  margin: 0;
+}
+
 button,
 input,
 select {
