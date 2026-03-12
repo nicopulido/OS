@@ -7,6 +7,7 @@ const processIdInput = document.getElementById('process-id');
 const processNameInput = document.getElementById('process-name');
 const processSelect = document.getElementById('process-select');
 const switchProcessBtn = document.getElementById('switch-process-btn');
+const terminateProcessBtn = document.getElementById('terminate-process-btn');
 const tickSpeedSelect = document.getElementById('tick-speed');
 const tick1Btn = document.getElementById('tick-1-btn');
 const tick10Btn = document.getElementById('tick-10-btn');
@@ -183,6 +184,11 @@ switchProcessBtn.addEventListener('click', () => {
   }
 
   os.changeProcess(selectedPid);
+  refreshUI();
+});
+
+terminateProcessBtn.addEventListener('click', () => {
+  os.terminateProcess();
   refreshUI();
 });
 

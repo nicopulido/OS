@@ -26,12 +26,15 @@
         </section>
 
         <section class="card">
-          <h2>Cambiar proceso</h2>
+          <h2>Gestor de procesos</h2>
           <div class="switch-row">
             <select id="process-select" aria-label="Seleccionar proceso">
               <option value="">Sin procesos</option>
             </select>
-            <button id="switch-process-btn" type="button">Cambiar</button>
+            <div class="manager-actions">
+              <button id="switch-process-btn" type="button">Cambiar</button>
+              <button id="terminate-process-btn" type="button">Terminar</button>
+            </div>
           </div>
           <p id="running-process">En ejecucion: ninguno</p>
         </section>

@@ -80,6 +80,12 @@ h2 {
   gap: 0.75rem;
 }
 
+.manager-actions {
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  gap: 0.5rem;
+}
+
 .tick-controls {
   display: grid;
   grid-template-columns: 160px 140px;
@@ -188,6 +194,10 @@ select:disabled {
 
   .switch-row {
     grid-template-columns: 1fr;
+  }
+
+  .manager-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .tick-controls {
