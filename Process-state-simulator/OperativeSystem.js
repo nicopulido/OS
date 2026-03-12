@@ -77,25 +77,4 @@ export default class OperativeSystem {
         }
     }
 
-    terminateProcessByPid(pid) {
-        const pcb = this.processes.find(p => p.pid === pid);
-
-        if (!pcb) {
-            console.log(`No process found with PID ${pid}.`);
-            return;
-        }
-
-        if (pcb.state === PROCESS_STATES.TERMINATED) {
-            console.log(`Process ${pcb.pid} is already TERMINATED.`);
-            return;
-        }
-
-        pcb.state = PROCESS_STATES.TERMINATED;
-        console.log(`Process ${pcb.pid} is now in TERMINATED state.`);
-
-        if (this.CPU.currentPCB && this.CPU.currentPCB.pid === pcb.pid) {
-            this.CPU.currentPCB = null;
-            console.log(`CPU released process ${pcb.pid}.`);
-        }
-    }
 }
