@@ -62,6 +62,7 @@ export default class OperativeSystem {
         }
 
         const pcb = this.CPU.currentPCB;
+        this.CPU.saveContext(pcb);
         pcb.state = PROCESS_STATES.WAITING;
         this.CPU.currentPCB = null;
         this.disk.startRead(pcb);
@@ -127,6 +128,7 @@ export default class OperativeSystem {
             }
 
             if (this.CPU.currentPCB) {
+                this.CPU.saveContext(this.CPU.currentPCB);
                 this.CPU.currentPCB.state = PROCESS_STATES.READY;
                 console.log(`Process ${this.CPU.currentPCB.pid} is now in READY state.`);
             }
