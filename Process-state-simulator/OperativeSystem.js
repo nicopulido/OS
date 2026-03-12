@@ -19,8 +19,30 @@ class OperativeSystem {
     schedule() {
         const nextPCB = this.scheduler.selectNextProcess(this.processes);
         if (nextPCB) {
+            nextPCB.state = PROCESS_STATES.RUNNING;
+            console.log(`Process ${nextPCB.pid} is now in RUNNING state.`);
             this.CPU.execute(nextPCB);
         }
 
+    }
+
+    setProcessWaiting() {
+        if (this.CPU.currentPCB) {
+            this.CPU.currentPCB.state = PROCESS_STATES.WAITING;
+            console.log(`Process ${this.CPU.currentPCB.pid} is now in WAITING state.`);
+            this.CPU.currentPCB = null;
+        } else {
+            console.log("No process is currently running to set to WAITING state.");
+        }
+    }
+    
+    terminateProcess() {
+        if (this.CPU.currentPCB) {
+            this.CPU.currentPCB.state = PROCESS_STATES.TERMINATED;
+            console.log(`Process ${this.CPU.currentPCB.pid} is now in TERMINATED state.`);
+            this.CPU.currentPCB = null;
+        } else {
+            console.log("No process is currently running to terminate.");
+        }
     }
 }
