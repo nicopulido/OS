@@ -13,8 +13,9 @@ export default class OperativeSystem {
         this.scheduler = new Scheduler();
     }
     
-    createProcess(id, name, executionTime, initiationTime) {
-        const process = new Process(id, name, executionTime, initiationTime);
+    createProcess(id, name, executionTime) {
+        const process = new Process(id, name, executionTime, this.processes.length); 
+        // Priority is determined by the order of creation
         const pcb = new PCB(process);
         pcb.state = PROCESS_STATES.NEW;
         console.log(`Process ${process.name} with PID ${pcb.pid} is created and in NEW state.`);    
