@@ -4,6 +4,7 @@ const PROCESS_STATES = {
     RUNNING: "RUNNING",
     WAITING: "WAITING",
     TERMINATED: "TERMINATED",
+    BLOCKED: "BLOCKED"
 };
 
 export default PROCESS_STATES;
