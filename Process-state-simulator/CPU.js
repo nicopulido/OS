@@ -1,11 +1,13 @@
 export default class CPU {
     constructor() {
-        this.currentPCB = null;
+        this.currentPCB = null; // The PCB of the currently running process on the CPU
     }
 
-    execute(pcb) {
+    // Method to assign a process to the CPU for execution
+    assignProcess(pcb) {
         this.currentPCB = pcb;
     }
+
 
     executeSimulation() {
         if (this.currentPCB) {
