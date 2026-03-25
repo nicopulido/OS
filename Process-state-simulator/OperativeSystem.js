@@ -1,6 +1,6 @@
 import CPU from './CPU.js';
 import Disk from './Disk.js';
-import Scheduler from './Scheduler.js';
+import Scheduler from './Schedulers/Scheduler.js';
 import Process from './Process.js';
 import PCB from './PCB.js';
 import PROCESS_STATES from './PROCESS_STATES.js';
@@ -11,7 +11,7 @@ export default class OperativeSystem {
         this.blockedProcesses = []; //queue of blocked processes
         this.readyProcesses = []; //queue of ready processes
         //Update will have no problem because this arrays contain pointers to the same PCB objects in allProcesses
-        
+
         this.CPU = new CPU();
         this.disk = new Disk();
         this.scheduler = new Scheduler();
