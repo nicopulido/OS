@@ -1,7 +1,7 @@
 import CPU from './CPU.js';
 import Disk from './Disk.js';
-import Scheduler from './Schedulers/Scheduler.js';
-import Process from './Process.js';
+import Scheduler from './schedulers/Scheduler.js';
+import Process from './process/Process.js';
 import PCB from './PCB.js';
 import PROCESS_STATES from './PROCESS_STATES.js';
 
@@ -27,5 +27,10 @@ export default class OperativeSystem {
         console.log(`Process ${process.name} with PID ${pcb.pid} is now in READY state.`);
         this.allProcesses.push(pcb);
     }
+
+    setScheduler(scheduler) {
+        this.scheduler = scheduler;
+    }
+    
 
 }
