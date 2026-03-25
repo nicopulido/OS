@@ -1,6 +1,6 @@
 export default class BlockingEvent {
     constructor(startTime, duration) {
-        this.startTime = startTime; // Time at which the blocking event starts
+        this.startTime = startTime; // Time at which the blocking event starts in the process's execution timeline
         this.duration = duration; // Duration of the blocking event
     }
 
