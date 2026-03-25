@@ -7,21 +7,25 @@ import PROCESS_STATES from './PROCESS_STATES.js';
 
 export default class OperativeSystem {
     constructor() {
-        this.processes = [];
+        this.allProcesses = []; // List of all processes in the system
+        this.blockedProcesses = []; //queue of blocked processes
+        this.readyProcesses = []; //queue of ready processes
+        //Update will have no problem because this arrays contain pointers to the same PCB objects in allProcesses
+        
         this.CPU = new CPU();
         this.disk = new Disk();
         this.scheduler = new Scheduler();
     }
     
     createProcess(id, name, executionTime) {
-        const process = new Process(id, name, executionTime, this.processes.length); 
+        const process = new Process(id, name, executionTime, this.allProcesses.length); 
         // Priority is determined by the order of creation
         const pcb = new PCB(process);
         pcb.state = PROCESS_STATES.NEW;
         console.log(`Process ${process.name} with PID ${pcb.pid} is created and in NEW state.`);    
         pcb.state = PROCESS_STATES.READY;
         console.log(`Process ${process.name} with PID ${pcb.pid} is now in READY state.`);
-        this.processes.push(pcb);
+        this.allProcesses.push(pcb);
     }
 
 }
