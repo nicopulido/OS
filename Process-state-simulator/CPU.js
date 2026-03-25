@@ -8,14 +8,10 @@ export default class CPU {
         this.currentPCB = pcb;
     }
 
-
-    executeSimulation() {
+    // Method to simulate the execution of the current process for one time unit
+    execute() {
         if (this.currentPCB) {
-            console.log(`Executing process ${this.currentPCB.process.name} with PID ${this.currentPCB.pid}.`);
-            this.currentPCB.programCounter += 1;
-            console.log(`Process ${this.currentPCB.process.name} with PID ${this.currentPCB.pid} has program counter at ${this.currentPCB.programCounter}.`);
-        } else {
-            console.log("No process is currently running on the CPU.");
+            this.currentPCB.updateExecutionTime(1); // Simulate execution by updating the execution time
         }
     }
 }
