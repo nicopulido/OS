@@ -1,9 +1,9 @@
 export default class Process {
-    constructor(id, name, executionTime, initiationTime) {
+    constructor(id, name, executionTime, arrivalTime) {
         this.id = id; // Unique identifier for the process
         this.name = name; // Name of the process 
         this.executionTime = executionTime; // Total time required for the process to complete execution
-        this.initiationTime = initiationTime; // Time at which the process is initiated
+        this.arrivalTime = arrivalTime // Time at which the process is initiated
         this.blockingEvents = []; // List of blocking events for the process
     }
 
