@@ -9,7 +9,8 @@ export default class Process {
 
     addBlockingEvent(startTime, duration) {
         // Ensure that the blocking event's start time is within the execution time of the process
-        if(startTime < this.executionTime && startTime >= 0) {
+        // Only allow a maximum of 5 blocking events per process to prevent excessive blocking
+        if(startTime < this.executionTime && startTime >= 0 && duration > 0 && this.blockingEvents.length < 5) {
             const event = new BlockingEvent(startTime, duration);
             this.blockingEvents.push(event);
         } else {
