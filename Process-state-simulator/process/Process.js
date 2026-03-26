@@ -7,6 +7,7 @@ export default class Process {
         this.executionTime = executionTime; // Total time required for the process to complete execution
         this.arrivalTime = arrivalTime // Time at which the process is initiated
         this.blockingEvents = []; // List of blocking events for the process
+        this.totalBlockingDuration = 0; // Sum of all configured blocking durations
     }
 
     addBlockingEvent(startTime, duration) {
@@ -15,6 +16,7 @@ export default class Process {
         if(startTime < this.executionTime && startTime >= 0 && duration > 0 && this.blockingEvents.length < 5) {
             const event = new BlockingEvent(startTime, duration);
             this.blockingEvents.push(event);
+            this.totalBlockingDuration += duration;
         } else {
             console.error(`Invalid blocking event start time: ${startTime}. It must be between 0 and the process's execution time.`);
         }

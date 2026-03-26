@@ -70,6 +70,7 @@
         <button id="stop-button" type="button">Detener</button>
       </div>
       <p><strong>Tick actual:</strong> <span id="tick-counter">0</span></p>
+      <p><strong>Tiempo total simulacion:</strong> <span id="simulation-uptime">0</span></p>
       <p><strong>CPU actual:</strong> <span id="cpu-status">Idle</span></p>
     </section>
 
@@ -89,6 +90,25 @@
             </tr>
           </thead>
           <tbody id="pcb-table-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel full-width">
+      <h2>Tabla de metricas</h2>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>PID</th>
+              <th>Nombre</th>
+              <th>Tiempo ejecucion</th>
+              <th>Tiempo en ready</th>
+              <th>Tiempo total bloqueado</th>
+              <th>Instante fin</th>
+            </tr>
+          </thead>
+          <tbody id="metrics-table-body"></tbody>
         </table>
       </div>
     </section>

@@ -15,8 +15,10 @@ const runButton = document.getElementById('run-button');
 const stepButton = document.getElementById('step-button');
 const stopButton = document.getElementById('stop-button');
 const tickCounter = document.getElementById('tick-counter');
+const simulationUptime = document.getElementById('simulation-uptime');
 const cpuStatus = document.getElementById('cpu-status');
 const pcbTableBody = document.getElementById('pcb-table-body');
+const metricsTableBody = document.getElementById('metrics-table-body');
 const timelineHead = document.getElementById('timeline-head');
 const timelineBody = document.getElementById('timeline-body');
 const logPanel = document.getElementById('log-panel');
@@ -117,6 +119,24 @@ function renderTable() {
   }
 }
 
+function renderMetricsTable() {
+  metricsTableBody.innerHTML = '';
+
+  for (const pcb of os.allProcesses) {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${pcb.pid}</td>
+      <td>${pcb.process.name}</td>
+      <td>${pcb.process.executionTime}</td>
+      <td>${pcb.totalReadyTime}</td>
+      <td>${pcb.process.totalBlockingDuration}</td>
+      <td>${pcb.finishedAtTick ?? '-'}</td>
+    `;
+
+    metricsTableBody.appendChild(row);
+  }
+}
+
 function getStateCellClass(state) {
   if (state === PROCESS_STATES.NEW) {
     return 'timeline-state-created';
@@ -194,11 +214,13 @@ function renderTimeline() {
 
 function renderStatus() {
   tickCounter.textContent = String(tick);
+  simulationUptime.textContent = String(os.getTotalSimulationTime());
   cpuStatus.textContent = os.CPU.currentPCB
     ? `${os.CPU.currentPCB.process.name} (PID ${os.CPU.currentPCB.pid})`
     : 'Idle';
 
   renderTable();
+  renderMetricsTable();
   renderTimeline();
   refreshProcessSelect();
 }
@@ -359,7 +381,16 @@ createProcessForm.addEventListener('submit', (event) => {
     pendingManualProcesses.push(deferredManual);
     appendLog(`Se aplazo la creacion manual de ${name} a t=${deferredManual.creationTick} para mantener 1 creacion por tick.`);
     createProcessForm.reset();
-    renderStatus();
+
+    if (!intervalId) {
+      // Advance one tick and then materialize deferred creations scheduled for this new tick.
+      performTick();
+      createScheduledProcessForCurrentTick();
+      captureTimelineSnapshot();
+      renderStatus();
+    } else {
+      renderStatus();
+    }
     return;
   }
 

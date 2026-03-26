@@ -8,6 +8,8 @@ export default class PCB {
         this.programCounter = 0;
         this.remainingExecutionTime = process.executionTime;
         this.remainingblockedTime = 0; // Time left for the process to remain blocked
+        this.totalReadyTime = 0; // Total ticks spent waiting in READY state
+        this.finishedAtTick = null; // Simulation tick when process reaches TERMINATED
     }
 
     updateState(newState) {
@@ -22,6 +24,16 @@ export default class PCB {
     updateRemainingBlockedTime(time) {
         this.remainingblockedTime = Math.max(0, this.remainingblockedTime - time);
         // Ensure remaining blocked time does not go below zero
+    }
+
+    incrementReadyTime(time = 1) {
+        this.totalReadyTime += Math.max(0, time);
+    }
+
+    setFinishedAtTick(tick) {
+        if (this.finishedAtTick === null) {
+            this.finishedAtTick = tick;
+        }
     }
     
 }
