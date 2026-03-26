@@ -16,5 +16,6 @@ export default class Process {
         } else {
             console.error(`Invalid blocking event start time: ${startTime}. It must be between 0 and the process's execution time.`);
         }
+        this.blockingEvents.sort((a, b) => a.startTime - b.startTime); // Ensure blocking events are sorted by start time
     }
 }
