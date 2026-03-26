@@ -9,6 +9,8 @@ export default class PCB {
         this.remainingExecutionTime = process.executionTime;
         this.remainingblockedTime = 0; // Time left for the process to remain blocked
         this.totalReadyTime = 0; // Total ticks spent waiting in READY state
+        this.firstReadyOrRunningTick = null; // First timeline tick where state is READY or RUNNING
+        this.firstRunningTick = null; // First timeline tick where state is RUNNING
         this.finishedAtTick = null; // Simulation tick when process reaches TERMINATED
     }
 
@@ -28,6 +30,18 @@ export default class PCB {
 
     incrementReadyTime(time = 1) {
         this.totalReadyTime += Math.max(0, time);
+    }
+
+    setFirstReadyOrRunningTick(tick) {
+        if (this.firstReadyOrRunningTick === null) {
+            this.firstReadyOrRunningTick = tick;
+        }
+    }
+
+    setFirstRunningTick(tick) {
+        if (this.firstRunningTick === null) {
+            this.firstRunningTick = tick;
+        }
     }
 
     setFinishedAtTick(tick) {

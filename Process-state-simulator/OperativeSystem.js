@@ -66,6 +66,7 @@ export default class OperativeSystem {
 
             if (hasWaitedInNew) {
                 pcb.state = PROCESS_STATES.READY;
+                pcb.setFirstReadyOrRunningTick(this.clock + 1);
                 this.readyProcesses.push(pcb);
                 console.log(`Process ${pcb.process.name} with PID ${pcb.pid} is now in READY state.`);
             } else {
@@ -130,6 +131,7 @@ export default class OperativeSystem {
             if (nextPCB) {
                 this.CPU.assignProcess(nextPCB);
                 nextPCB.state = PROCESS_STATES.RUNNING;
+                nextPCB.setFirstRunningTick(this.clock + 1);
                 console.log(`Process ${nextPCB.process.name} with PID ${nextPCB.pid} is now RUNNING on the CPU.`);
                 this.readyProcesses = this.readyProcesses.filter(pcb => pcb.pid !== nextPCB.pid);
             } else {

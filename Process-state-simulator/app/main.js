@@ -121,8 +121,26 @@ function renderTable() {
 
 function renderMetricsTable() {
   metricsTableBody.innerHTML = '';
+  const totalSimulationTime = os.getTotalSimulationTime();
 
   for (const pcb of os.allProcesses) {
+    const hasStartAndEnd = pcb.firstReadyOrRunningTick !== null && pcb.finishedAtTick !== null;
+    const turnaround = hasStartAndEnd
+      ? pcb.finishedAtTick - pcb.firstReadyOrRunningTick
+      : null;
+    const responseTime = pcb.firstReadyOrRunningTick !== null && pcb.firstRunningTick !== null
+      ? pcb.firstRunningTick - pcb.firstReadyOrRunningTick
+      : null;
+    const wastedTime = turnaround !== null
+      ? turnaround - pcb.process.executionTime
+      : null;
+    const penalty = turnaround !== null && pcb.process.executionTime > 0
+      ? (turnaround / pcb.process.executionTime)
+      : null;
+    const cpuUsagePct = totalSimulationTime > 0
+      ? ((pcb.process.executionTime / totalSimulationTime) * 100)
+      : null;
+
     const row = document.createElement('tr');
     row.innerHTML = `
       <td>${pcb.pid}</td>
@@ -130,7 +148,13 @@ function renderMetricsTable() {
       <td>${pcb.process.executionTime}</td>
       <td>${pcb.totalReadyTime}</td>
       <td>${pcb.process.totalBlockingDuration}</td>
+      <td>${pcb.firstReadyOrRunningTick ?? '-'}</td>
       <td>${pcb.finishedAtTick ?? '-'}</td>
+      <td>${turnaround ?? '-'}</td>
+      <td>${responseTime ?? '-'}</td>
+      <td>${wastedTime ?? '-'}</td>
+      <td>${penalty !== null ? penalty.toFixed(2) : '-'}</td>
+      <td>${cpuUsagePct !== null ? `${cpuUsagePct.toFixed(2)}%` : '-'}</td>
     `;
 
     metricsTableBody.appendChild(row);
