@@ -7,6 +7,7 @@ import PROCESS_STATES from './PROCESS_STATES.js';
 export default class OperativeSystem {
     constructor() {
         this.clock = 0; // Simulation clock measured in ticks
+        this.simulationStartTick = 0; // Tick when simulator started counting uptime
         this.allProcesses = []; // List of all processes in the system
         this.newProcesses = []; // queue of NEW processes pending admission
         this.blockedProcesses = []; //queue of blocked processes
@@ -47,7 +48,14 @@ export default class OperativeSystem {
             this.schedule();
         }
 
+        // READY processes that were not selected accumulate waiting time in this tick.
+        this.updateReadyMetrics();
+
         this.clock += 1;
+    }
+
+    getTotalSimulationTime() {
+        return this.clock - this.simulationStartTick;
     }
 
     admitNewProcesses() {
@@ -105,8 +113,15 @@ export default class OperativeSystem {
         }else if(runningPCB.remainingExecutionTime <= 0) {
             // If the process has finished execution, move it to the terminated state
             runningPCB.state = PROCESS_STATES.TERMINATED;
+            runningPCB.setFinishedAtTick(this.clock + 1);
             console.log(`Process ${runningPCB.process.name} with PID ${runningPCB.pid} has finished execution and is now in TERMINATED state.`);
             this.CPU.currentPCB = null; // Remove the process from the CPU
+        }
+    }
+
+    updateReadyMetrics() {
+        for (const pcb of this.readyProcesses) {
+            pcb.incrementReadyTime(1);
         }
     }
 
