@@ -1,3 +1,5 @@
+import Scheduler from './Scheduler.js';
+
 export default class FCFSScheduler extends Scheduler {
     constructor() {
         super();

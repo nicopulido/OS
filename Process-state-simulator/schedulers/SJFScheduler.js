@@ -1,3 +1,5 @@
+import Scheduler from './Scheduler.js';
+
 export default class SJFScheduler extends Scheduler {
     constructor() {
         super();

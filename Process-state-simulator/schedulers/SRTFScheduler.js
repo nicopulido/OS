@@ -1,3 +1,5 @@
+import Scheduler from './Scheduler.js';
+
 export default class SRTFScheduler extends Scheduler {
     constructor() {
         super();

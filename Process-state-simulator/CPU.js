@@ -11,7 +11,13 @@ export default class CPU {
     // Method to simulate the execution of the current process for one time unit
     execute() {
         if (this.currentPCB) {
-            this.currentPCB.updateExecutionTime(1); // Simulate execution by updating the execution time
+            this.currentPCB.programCounter += 1;
+            this.currentPCB.updateRemainingExecutionTime(1); // Simulate one CPU time unit
         }
+    }
+
+    // Alias used by the UI/OS loop to advance one simulation time unit
+    tick() {
+        this.execute();
     }
 }

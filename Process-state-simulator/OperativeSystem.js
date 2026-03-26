@@ -1,5 +1,4 @@
 import CPU from './CPU.js';
-import Disk from './Disk.js';
 import Scheduler from './schedulers/Scheduler.js';
 import Process from './process/Process.js';
 import PCB from './PCB.js';
@@ -7,25 +6,26 @@ import PROCESS_STATES from './PROCESS_STATES.js';
 
 export default class OperativeSystem {
     constructor() {
+        this.clock = 0; // Simulation clock measured in ticks
         this.allProcesses = []; // List of all processes in the system
+        this.newProcesses = []; // queue of NEW processes pending admission
         this.blockedProcesses = []; //queue of blocked processes
         this.readyProcesses = []; //queue of ready processes
         //Update will have no problem because this arrays contain pointers to the same PCB objects in allProcesses
 
         this.CPU = new CPU();
-        this.disk = new Disk();
         this.scheduler = new Scheduler();
     }
     
-    createProcess(id, name, executionTime) {
-        const process = new Process(id, name, executionTime, this.allProcesses.length); 
+    createProcess(id, name, executionTime, arrivalTime = this.allProcesses.length) {
+        const process = new Process(id, name, executionTime, arrivalTime); 
         // Priority is determined by the order of creation
         const pcb = new PCB(process);
         pcb.state = PROCESS_STATES.NEW;
+        pcb.createdAtTick = this.clock;
         console.log(`Process ${process.name} with PID ${pcb.pid} is created and in NEW state.`);    
-        pcb.state = PROCESS_STATES.READY;
-        console.log(`Process ${process.name} with PID ${pcb.pid} is now in READY state.`);
         this.allProcesses.push(pcb);
+        this.newProcesses.push(pcb);
     }
 
     setScheduler(scheduler) {
@@ -33,10 +33,12 @@ export default class OperativeSystem {
     }
 
     tick() {
+        // Admit NEW processes that have completed at least one tick in NEW
+        this.admitNewProcesses();
         // Update the state of blocked processes
         this.updateBlockedProcesses();
         // Simulate the execution of the current process on the CPU
-        this.CPU.execute();
+        this.CPU.tick();
         // Update the state of the running process and handle blocking or termination
         this.updateRunningProcess();
 
@@ -44,6 +46,26 @@ export default class OperativeSystem {
         if (!this.CPU.currentPCB) {
             this.schedule();
         }
+
+        this.clock += 1;
+    }
+
+    admitNewProcesses() {
+        const remainingNewProcesses = [];
+
+        for (const pcb of this.newProcesses) {
+            const hasWaitedInNew = this.clock >= pcb.createdAtTick;
+
+            if (hasWaitedInNew) {
+                pcb.state = PROCESS_STATES.READY;
+                this.readyProcesses.push(pcb);
+                console.log(`Process ${pcb.process.name} with PID ${pcb.pid} is now in READY state.`);
+            } else {
+                remainingNewProcesses.push(pcb);
+            }
+        }
+
+        this.newProcesses = remainingNewProcesses;
     }
 
     updateBlockedProcesses() {
@@ -64,6 +86,10 @@ export default class OperativeSystem {
 
     updateRunningProcess() {
         const runningPCB = this.CPU.currentPCB;
+        if (!runningPCB) {
+            return;
+        }
+
         if(runningPCB.programCounter == runningPCB.process.blockingEvents[0]?.startTime) {
             // If the process has a blocking event at the current program counter, move it to the blocked queue
             const blockedPCB = runningPCB;

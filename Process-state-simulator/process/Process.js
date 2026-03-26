@@ -1,3 +1,5 @@
+import BlockingEvent from './BlockingEvent.js';
+
 export default class Process {
     constructor(id, name, executionTime, arrivalTime) {
         this.id = id; // Unique identifier for the process
