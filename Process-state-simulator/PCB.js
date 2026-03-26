@@ -28,6 +28,8 @@ export default class PCB {
         // Ensure remaining blocked time does not go below zero
     }
 
+    //Methods to set specific ticks for metrics
+
     incrementReadyTime(time = 1) {
         this.totalReadyTime += Math.max(0, time);
     }

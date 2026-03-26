@@ -54,10 +54,13 @@ export default class OperativeSystem {
         this.clock += 1;
     }
 
+    // Utility method to calculate total simulation time
     getTotalSimulationTime() {
         return this.clock - this.simulationStartTick;
     }
 
+
+    // Method to admit NEW processes that have completed at least one tick in the NEW state
     admitNewProcesses() {
         const remainingNewProcesses = [];
 
