@@ -1,8 +1,8 @@
-import OperatingSystem from '../OperatingSystem.js';
-import PROCESS_STATES from '../PROCESS_STATES.js';
-import FCFSScheduler from '../schedulers/FCFSScheduler.js';
-import SJFScheduler from '../schedulers/SJFScheduler.js';
-import SRTFScheduler from '../schedulers/SRTFScheduler.js';
+import OperatingSystem from '../core/OperatingSystem.js';
+import PROCESS_STATES from '../process/PROCESS_STATES.js';
+import FCFSScheduler from '../scheduling/FCFSScheduler.js';
+import SJFScheduler from '../scheduling/strategies/SJFScheduler.js';
+import SRTFScheduler from '../scheduling/strategies/SRTFScheduler.js';
 
 const os = new OperatingSystem();
 

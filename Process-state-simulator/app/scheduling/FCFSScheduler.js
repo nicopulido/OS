@@ -1,4 +1,4 @@
-import Scheduler from './Scheduler.js';
+import Scheduler from './strategies/Scheduler.js';
 
 export default class FCFSScheduler extends Scheduler {
     constructor() {

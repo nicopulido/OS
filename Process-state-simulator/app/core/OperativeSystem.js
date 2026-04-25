@@ -1,8 +1,8 @@
 import CPU from './CPU.js';
-import Scheduler from './schedulers/Scheduler.js';
-import Process from './process/Process.js';
-import PCB from './PCB.js';
-import PROCESS_STATES from './PROCESS_STATES.js';
+import Scheduler from '../scheduling/strategies/Scheduler.js';
+import Process from '../process/Process.js';
+import PCB from '../process/PCB.js';
+import PROCESS_STATES from '../process/PROCESS_STATES.js';
 
 export default class OperativeSystem {
     constructor() {
