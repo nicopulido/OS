@@ -32,6 +32,16 @@ body {
   grid-template-columns: repeat(12, 1fr);
 }
 
+#app {
+  grid-column: 1 / -1;
+}
+
+.view {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(12, 1fr);
+}
+
 .hero,
 .panel {
   border: 1px solid var(--line);
@@ -292,5 +302,44 @@ th {
 
   .layout {
     margin: 1rem auto;
+  }
+}
+
+.view-home {
+  display: grid;
+  gap: 1rem;
+}
+
+.mode-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-column: 1 / -1;
+}
+
+.mode-button {
+  min-height: 64px;
+}
+
+.cpu-nav-panel {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.back-button {
+  width: fit-content;
+}
+
+@media (max-width: 700px) {
+  .mode-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cpu-nav-panel {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
