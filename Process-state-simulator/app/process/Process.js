@@ -1,13 +1,19 @@
 import BlockingEvent from './BlockingEvent.js';
 
 export default class Process {
-    constructor(id, name, executionTime, arrivalTime) {
+    constructor(id, name, executionTime, arrivalTime, heapSize, stackSize, textSize, dataSize, bssSize) {
         this.id = id; // Unique identifier for the process
         this.name = name; // Name of the process 
         this.executionTime = executionTime; // Total time required for the process to complete execution
         this.arrivalTime = arrivalTime // Time at which the process is initiated
         this.blockingEvents = []; // List of blocking events for the process
         this.totalBlockingDuration = 0; // Sum of all configured blocking durations
+        this.totalSize = heapSize + stackSize + textSize + dataSize + bssSize; // Total memory size required by the process
+        this.heapSize = heapSize; // Memory allocated for the process's heap
+        this.stackSize = stackSize; // Memory allocated for the process's stack
+        this.textSize = textSize; // Memory allocated for the process's text segment
+        this.dataSize = dataSize; // Memory allocated for the process's data segment
+        this.bssSize = bssSize; // Memory allocated for the process's BSS segment
     }
 
     addBlockingEvent(startTime, duration) {
