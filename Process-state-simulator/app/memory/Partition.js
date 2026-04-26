@@ -9,4 +9,20 @@ export class Partition {
     setPID(PID) {
         this.PID = PID;
     }
+
+    isFree() {
+        return this.PID === 0;
+    }
+
+    canFit(sizeInBytes) {
+        return this.isFree() && this.size >= sizeInBytes;
+    }
+
+    allocateTo(PID) {
+        this.PID = PID;
+    }
+
+    release() {
+        this.PID = 0;
+    }
 }
