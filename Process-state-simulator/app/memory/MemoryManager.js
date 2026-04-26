@@ -8,7 +8,7 @@ export class MemoryManager {
         this.ramCapacity = capacity;
     }
 
-    addPartition(PID, base, size) {
+    addPartition(base, size) {
         const partition = new Partition(base, size);
         this.partitionsTable.push(partition);
     }
