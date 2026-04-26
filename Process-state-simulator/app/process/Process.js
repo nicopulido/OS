@@ -8,6 +8,8 @@ export default class Process {
         this.arrivalTime = arrivalTime // Time at which the process is initiated
         this.blockingEvents = []; // List of blocking events for the process
         this.totalBlockingDuration = 0; // Sum of all configured blocking durations
+        this.memoryEvents = []; // List of memory events for the process
+        this.finalInstantOnMemory = 0; // Time at which the process will finish using memory based on its memory events
         this.totalSize = heapSize + stackSize + textSize + dataSize + bssSize; // Total memory size required by the process
         this.heapSize = heapSize; // Memory allocated for the process's heap
         this.stackSize = stackSize; // Memory allocated for the process's stack
@@ -27,5 +29,17 @@ export default class Process {
             console.error(`Invalid blocking event start time: ${startTime}. It must be between 0 and the process's execution time.`);
         }
         this.blockingEvents.sort((a, b) => a.startTime - b.startTime); // Ensure blocking events are sorted by start time
+    }
+
+    addMemoryEvent(startTime, duration) {
+        // Ensure that the memory event's start time is within the execution time of the process
+        if(startTime < this.executionTime && startTime >= 0 && duration > 0) {
+            const event = new MemoryEvent(startTime, duration);
+            this.memoryEvents.push(event);
+            this.finalInstantOnMemory = Math.max(this.finalInstantOnMemory, startTime + duration);
+        } else {
+            console.error(`Invalid memory event start time: ${startTime}. It must be between 0 and the process's execution time.`);
+        }
+        this.memoryEvents.sort((a, b) => a.startTime - b.startTime); // Ensure memory events are sorted by start time
     }
 }
