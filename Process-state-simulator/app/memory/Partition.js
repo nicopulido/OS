@@ -1,8 +1,8 @@
 export class Partition {
-    constructor(base, limit) {
+    constructor(base, size) {
         this.PID = 0;
         this.base = base;
-        this.limit = limit;
+        this.size = size;
     }
 
     setPID(PID) {
