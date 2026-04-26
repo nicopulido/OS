@@ -21,4 +21,8 @@ export class MemoryManager {
     restartPartitions() {
         this.partitionsTable = [];
     }
+
+    allocateProcess(PID, sizeInBytes) {
+        console.log(`Allocating process ${PID} with size ${sizeInBytes} bytes...`);
+    }
 }
