@@ -12,23 +12,3 @@ export function mibToBytes(mib) {
     return Math.round(mib * MiB);
 }
 
-// Usage examples.
-export const EXAMPLE_16_MIB = {
-    kib: mibToKib(16),
-    bytes: mibToBytes(16)
-};
-
-export const EXAMPLE_05_MIB = {
-    kib: mibToKib(0.5),
-    bytes: mibToBytes(0.5)
-};
-
-export const EXAMPLE_025_MIB = {
-    kib: mibToKib(0.25),
-    bytes: mibToBytes(0.25)
-};
-
-export const EXAMPLE_4_MIB = {
-    kib: mibToKib(4),
-    bytes: mibToBytes(4)
-};
