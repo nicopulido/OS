@@ -1,12 +1,10 @@
+import MemoryUnits from "../MemoryUnits.js";
+
 export class MemoryManager {
     constructor() {
-        this.ramCapacity;
+        this.ramCapacity = 16*MemoryUnits.MiB;
         this.partitionsTable = [];
         this.memmoryModel = null;
-    }
-
-    setRamCapacity(capacity) {
-        this.ramCapacity = capacity;
     }
 
     addPartition(base, size) {
