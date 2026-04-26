@@ -18,7 +18,7 @@ export class MemoryManager {
         this.memmoryModel = model;
     }
 
-    restarPartitions() {
+    restartPartitions() {
         this.partitionsTable = [];
     }
 }
