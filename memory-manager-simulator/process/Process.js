@@ -2,11 +2,11 @@ import MemoryEvent from './MemoryEvent.js';
 
 export default class Process {
 	constructor(textSizeBytes = 0, dataSizeBytes = 0, bssSizeBytes = 0, heapSizeBytes = 0, stackSizeBytes = 0) {
-		this.textSizeBytes = this._validateSize(textSizeBytes, 'textSizeBytes');
-		this.dataSizeBytes = this._validateSize(dataSizeBytes, 'dataSizeBytes');
-		this.bssSizeBytes = this._validateSize(bssSizeBytes, 'bssSizeBytes');
-		this.heapSizeBytes = this._validateSize(heapSizeBytes, 'heapSizeBytes');
-		this.stackSizeBytes = this._validateSize(stackSizeBytes, 'stackSizeBytes');
+		this.textSizeBytes = this.validateSize(textSizeBytes, 'textSizeBytes');
+		this.dataSizeBytes = this.validateSize(dataSizeBytes, 'dataSizeBytes');
+		this.bssSizeBytes = this.validateSize(bssSizeBytes, 'bssSizeBytes');
+		this.heapSizeBytes = this.validateSize(heapSizeBytes, 'heapSizeBytes');
+		this.stackSizeBytes = this.validateSize(stackSizeBytes, 'stackSizeBytes');
 		this.memoryOccupationEvents = [];
 	}
 
@@ -27,7 +27,7 @@ export default class Process {
 		return newEvent;
 	}
 
-	_validateSize(value, fieldName) {
+	validateSize(value, fieldName) {
 		if (!Number.isFinite(value) || value < 0) {
 			throw new Error(`${fieldName} must be a non-negative finite number.`);
 		}
