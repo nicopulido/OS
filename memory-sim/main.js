@@ -1,52 +1,42 @@
 /**
  * main.js
  * UI rendering and event handling for the memory simulator.
- * All DOM manipulation lives here — memoryManager.js is DOM-free.
- *
- * Color scheme:
- *   OS     → yellow
- *   Loaded → green
- *   Free   → gray
- *   Failed → red (on process cards only)
  */
 
 import { MemoryManager } from './memoryManager.js';
 
 const manager = new MemoryManager();
-let autoInterval = null;
 
 /* ================================================================
    DOM references
    ================================================================ */
 const $ = id => document.getElementById(id);
 
-const $partitionMode = $('partitionMode');
-const $algorithm     = $('algorithm');
-const $compactionWrap= $('compactionWrap');
-const $compaction    = $('compactionToggle');
-const $osSize        = $('osSize');
-const $stepBtn       = $('stepBtn');
-const $autoBtn       = $('autoBtn');
-const $resetBtn      = $('resetBtn');
-const $eventLog      = $('eventLog');
-const $memoryBar     = $('memoryBar');
-const $memTooltip    = $('memTooltip');
-const $metrics       = $('metrics');
-const $processCards  = $('processCards');
-const $partTableWrap = $('partitionTableWrap');
-const $stepBadge     = $('stepBadge');
-const $memoryHistory = $('memoryHistory');
+const $memoryScheme = $('memoryScheme');
+const $segmentationControls = $('segmentationControls');
+const $pagingControls = $('pagingControls');
+const $algorithm = $('algorithm');
+const $pageSize = $('pageSize');
+const $osSize = $('osSize');
+const $resetBtn = $('resetBtn');
+const $compactBtn = $('compactBtn');
+const $eventLog = $('eventLog');
+const $memoryBar = $('memoryBar');
+const $memTooltip = $('memTooltip');
+const $metrics = $('metrics');
+const $processCards = $('processCards');
+const $tableTitle = $('tableTitle');
+const $memoryTableWrap = $('memoryTableWrap');
+const $stepBadge = $('stepBadge');
 
 // Add-process form
-const $procName     = $('procName');
-const $procText     = $('procText');
-const $procData     = $('procData');
-const $procBss      = $('procBss');
-const $procHeap     = $('procHeap');
-const $procStack    = $('procStack');
-const $procBurst    = $('procBurst');
-const $procInterval = $('procInterval');
-const $addProcBtn   = $('addProcBtn');
+const $procName = $('procName');
+const $procText = $('procText');
+const $procData = $('procData');
+const $procBss = $('procBss');
+const $procHeap = $('procHeap');
+const $procStack = $('procStack');
+const $addProcBtn = $('addProcBtn');
 
 /* ================================================================
    Helpers
@@ -67,11 +57,6 @@ function fmtDec(addr) {
   return addr.toLocaleString();
 }
 
-/** Combined hex + decimal for display in blocks */
-function fmtAddr(addr) {
-  return `${fmtHex(addr)} (${fmtDec(addr)})`;
-}
-
 function esc(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
 }
@@ -79,142 +64,134 @@ function esc(s) {
 /* ================================================================
    Rendering
    ================================================================ */
-
 function render() {
   const state = manager.getState();
-  renderStepBadge(state);
+  
+  $stepBadge.textContent = `Esquema: ${state.scheme === 'segmentation' ? 'Segmentación' : 'Paginación'}`;
+  
   renderMemoryBar(state);
   renderMetrics(state);
   renderProcessCards(state);
-  renderPartitionTable(state);
-  renderMemoryHistory(state);
+  renderTable(state);
+  renderLogs(state);
 }
 
-/* ---- Step badge ---- */
-function renderStepBadge(state) {
-  $stepBadge.textContent = `Paso ${state.currentStep}`;
-}
-
-/* ---- Memory Bar (vertical, BOTTOM TO TOP, with hex+decimal addresses) ---- */
 function renderMemoryBar(state) {
-  const total = state.metrics.totalBytes;
+  const total = 16 * MB;
   $memoryBar.innerHTML = '';
 
-  for (const p of state.partitions) {
-    const pct = (p.size / total) * 100;
+  for (const block of state.blocks) {
+    const pct = (block.size / total) * 100;
     const div = document.createElement('div');
     div.className = 'mem-block';
+    
+    if (state.scheme === 'paging' && !block.isOS && !block.isFree) {
+        div.classList.add('frame-block');
+    }
 
-    // Address label: hex + decimal
-    const addrText = `${fmtHex(p.startAddress)} | ${fmtDec(p.startAddress)}`;
-    const addrSpan = `<span class="block-addr">${addrText}</span>`;
+    const addrSpan = `<span class="block-addr">${fmtHex(block.startAddress)}</span>`;
     let labelText = '';
 
-    if (p.isOS) {
+    if (block.isOS) {
       div.classList.add('os-block');
       labelText = 'SO';
-    } else if (p.isFree) {
+    } else if (block.isFree) {
       div.classList.add('free-block');
       labelText = pct > 4 ? 'Libre' : '';
     } else {
-      // Process block — ALL loaded processes are green
       div.classList.add('proc-block');
-      labelText = p.process.name;
+      div.style.borderLeftColor = block.process.color;
+      
+      if (state.scheme === 'segmentation') {
+        labelText = `${block.process.name} [${block.segmentName}]`;
+      } else {
+        labelText = pct > 2 ? `${block.process.name} (${block.frameCount} marcos)` : '';
+      }
     }
 
     div.innerHTML = `${addrSpan}<span class="block-label">${labelText}</span>`;
     div.style.flex = `0 0 ${pct}%`;
 
-    div.addEventListener('mouseenter', (e) => showTooltip(e, p));
+    div.addEventListener('mouseenter', (e) => showTooltip(e, block, state.scheme));
+    div.addEventListener('mousemove',  (e) => positionTooltip(e));
     div.addEventListener('mouseleave', hideTooltip);
 
     $memoryBar.appendChild(div);
   }
 }
 
-function showTooltip(e, partition) {
-  const endAddr = partition.startAddress + partition.size - 1;
-  let label = partition.isOS ? 'Sistema Operativo'
-    : partition.isFree ? 'Libre'
-    : `${partition.process.name} (PID ${partition.process.pid})`;
+function showTooltip(e, block, scheme) {
+  const endAddr = block.startAddress + block.size - 1;
+  let label = block.isOS ? 'Sistema Operativo' : block.isFree ? 'Hueco Libre' : block.process.name;
+  let extraRows = '';
 
-  // Internal fragmentation for occupied partitions
-  let fragLine = '';
-  if (!partition.isFree && !partition.isOS && partition.process) {
-    const frag = partition.size - partition.process.totalSize;
-    if (frag > 0) {
-      fragLine = `<br/>Frag. interna: ${fmtBytes(frag)}`;
+  if (!block.isOS && !block.isFree) {
+    if (scheme === 'segmentation') {
+      extraRows += `<div class="tip-row"><span>Segmento:</span><span>${block.segmentName}</span></div>`;
+    } else {
+      extraRows += `<div class="tip-row"><span>Marcos:</span><span>${block.frameCount}</span></div>`;
     }
   }
 
   $memTooltip.innerHTML = `
-    <strong>${label}</strong><br/>
-    Inicio: ${fmtAddr(partition.startAddress)}<br/>
-    Fin: ${fmtAddr(endAddr)}<br/>
-    Tamaño: ${fmtBytes(partition.size)}${fragLine}
+    <strong>${label}</strong>
+    <hr style="border:none;border-top:1px solid #e5e7eb;margin:5px 0">
+    <div class="tip-row"><span>Inicio:</span><span>${fmtHex(block.startAddress)}</span></div>
+    <div class="tip-row"><span>Fin:</span><span>${fmtHex(endAddr)}</span></div>
+    <div class="tip-row"><span>Tamaño:</span><span>${fmtBytes(block.size)}</span></div>
+    ${extraRows}
   `;
 
-  const rect = e.target.getBoundingClientRect();
-  const wrapRect = $memoryBar.parentElement.getBoundingClientRect();
-  $memTooltip.style.top = (rect.top - wrapRect.top) + 'px';
+  positionTooltip(e);
   $memTooltip.classList.add('visible');
+}
+
+function positionTooltip(e) {
+  const pad = 14;
+  const tw = $memTooltip.offsetWidth || 220;
+  const th = $memTooltip.offsetHeight || 120;
+  let x = e.clientX + pad;
+  let y = e.clientY + pad;
+  if (x + tw > window.innerWidth - 10)  x = e.clientX - tw - pad;
+  if (y + th > window.innerHeight - 10) y = e.clientY - th - pad;
+  $memTooltip.style.left = x + 'px';
+  $memTooltip.style.top  = y + 'px';
 }
 
 function hideTooltip() {
   $memTooltip.classList.remove('visible');
 }
 
-/* ---- Metrics (with internal fragmentation) ---- */
 function renderMetrics(state) {
   const m = state.metrics;
+  const totalBytes = 16 * MB;
   let html = `
-    <div class="metric-row"><span>Total:</span><span class="mono">${fmtBytes(m.totalBytes)}</span></div>
+    <div class="metric-row"><span>Total:</span><span class="mono">${fmtBytes(totalBytes)}</span></div>
     <div class="metric-row"><span>Usada:</span><span class="mono">${fmtBytes(m.usedBytes)}</span></div>
     <div class="metric-row"><span>Libre:</span><span class="mono">${fmtBytes(m.freeBytes)}</span></div>
   `;
-  if (m.externalFragmentation) {
-    html += `<div class="metric-row frag-warn">⚠ Frag. externa: ${m.freeBlockCount} bloques</div>`;
+  if (state.scheme === 'segmentation' && m.externalFragmentation) {
+    html += `<div class="metric-row frag-warn">⚠ Frag. externa: ${m.freeHolesCount} huecos libres</div>`;
   }
-  if (m.internalFragBytes > 0) {
-    html += `<div class="metric-row frag-internal">↳ Frag. interna: ${fmtBytes(m.internalFragBytes)}</div>`;
+  if (state.scheme === 'paging' && m.internalFragBytes > 0) {
+    html += `<div class="metric-row frag-internal">↳ Frag. interna: ${fmtBytes(m.internalFragBytes)} desperdiciados</div>`;
   }
   $metrics.innerHTML = html;
 }
 
-/* ---- Process Cards ---- */
 function renderProcessCards(state) {
   $processCards.innerHTML = '';
 
-  // Track which processes just failed this step (for red card highlighting)
-  const lastTimeline = state.timeline.length > 0
-    ? state.timeline[state.timeline.length - 1]
-    : null;
-
   for (const proc of state.processes) {
     const isLoaded = proc.state === 'loaded';
-    const justFailed = lastTimeline && lastTimeline.states[proc.pid] === 'failed';
+    const isFailed = proc.state === 'failed';
+    const isClosed = proc.state === 'closed';
 
     const card = document.createElement('div');
+    card.className = `proc-card state-card-${proc.state}`;
 
-    // Card color by state: green=loaded, red=has failures, gray=waiting
-    let cardState = 'state-card-waiting';
-    if (isLoaded) {
-      cardState = 'state-card-loaded';
-    } else if (proc.failures > 0) {
-      cardState = 'state-card-failed';
-    }
-    card.className = `proc-card ${cardState}`;
-
-    const progressPct = isLoaded
-      ? ((proc.burst - proc.burstRemaining) / proc.burst) * 100
-      : proc.interval > 0
-        ? ((proc.interval - proc.intervalRemaining) / proc.interval) * 100
-        : 0;
-
-    const progressColor = isLoaded ? '#22c55e' : proc.failures > 0 ? '#fca5a5' : '#d1d5db';
-    const progressLabel = isLoaded
-      ? `Burst: ${proc.burst - proc.burstRemaining}/${proc.burst}`
-      : `Espera: ${proc.interval - proc.intervalRemaining}/${proc.interval}`;
+    const badgeCls = isLoaded ? 'state-loaded' : isFailed ? 'state-failed' : 'state-closed';
+    const badgeTxt = isLoaded ? 'En Memoria' : isFailed ? 'Falló (No hay espacio)' : 'Cerrado';
 
     card.innerHTML = `
       <div class="card-header">
@@ -226,118 +203,100 @@ function renderProcessCards(state) {
       </div>
       <div class="card-info">
         <span>${fmtBytes(proc.totalSize)}</span>
-        <span class="state-badge ${isLoaded ? 'state-loaded' : 'state-waiting'}">
-          ${isLoaded ? 'En memoria' : 'Esperando'}
-        </span>
+        <span class="state-badge ${badgeCls}">${badgeTxt}</span>
       </div>
-      <div class="progress-wrap">
-        <div class="progress-fill" style="width:${progressPct}%;background:${progressColor}"></div>
-      </div>
-      <div class="progress-label">
-        <span>${progressLabel}</span>
-        <span class="${proc.failures > 0 ? 'failures' : ''}">Fallos: ${proc.failures}</span>
+      <div class="card-actions">
+        ${isLoaded 
+          ? `<button class="btn btn-close" data-pid="${proc.pid}">✖ Cerrar</button>` 
+          : `<button class="btn btn-open" data-pid="${proc.pid}">▶ Abrir</button>`}
       </div>
     `;
 
     $processCards.appendChild(card);
   }
-}
 
-/* ---- Memory History (horizontal bar per step) ---- */
-function renderMemoryHistory(state) {
-  const snapshots = state.memorySnapshots;
-  if (snapshots.length === 0) {
-    $memoryHistory.innerHTML = '<p style="color:#999;font-size:.75rem;">Ejecuta pasos para ver el historial.</p>';
-    return;
-  }
-
-  const total = state.metrics.totalBytes;
-  const recent = snapshots.slice(-30);
-
-  let html = '';
-  for (const snap of recent) {
-    html += `<div class="history-entry">`;
-    html += `<span class="history-step-label">${snap.step}</span>`;
-    html += `<div class="history-bar">`;
-
-    for (const p of snap.partitions) {
-      const pct = (p.size / total) * 100;
-      let cls = '';
-      let label = '';
-
-      if (p.isOS) {
-        cls = 'os';
-        label = pct > 5 ? 'SO' : '';
-      } else if (p.isFree) {
-        cls = 'free';
-      } else {
-        cls = 'proc';
-        label = pct > 6 ? p.processName : '';
-      }
-
-      html += `<div class="history-block ${cls}" style="width:${pct}%;" title="${p.isOS ? 'SO' : p.isFree ? 'Libre' : p.processName} — ${fmtHex(p.startAddress)} — ${fmtBytes(p.size)}">${label}</div>`;
-    }
-
-    html += `</div></div>`;
-  }
-
-  $memoryHistory.innerHTML = html;
-  $memoryHistory.scrollTop = $memoryHistory.scrollHeight;
-}
-
-/* ---- Partition Table (with internal fragmentation column) ---- */
-function renderPartitionTable(state) {
-  let html = `<table class="part-table">
-    <thead><tr>
-      <th>#</th><th>Inicio (hex)</th><th>Inicio (dec)</th><th>Tamaño</th><th>Estado</th><th>Proceso</th><th>Frag. Int.</th>
-    </tr></thead><tbody>`;
-
-  state.partitions.forEach((p, i) => {
-    const statusBadge = p.isOS
-      ? '<span class="badge badge-os">SO</span>'
-      : p.isFree
-        ? '<span class="badge badge-free">Libre</span>'
-        : `<span class="badge badge-occupied">${esc(p.process.name)}</span>`;
-
-    const procName = p.isOS ? 'Kernel' : p.isFree ? '—' : esc(p.process.name);
-
-    let fragCell = '<td class="frag-cell zero">—</td>';
-    if (!p.isFree && !p.isOS && p.process) {
-      const frag = p.size - p.process.totalSize;
-      if (frag > 0) {
-        fragCell = `<td class="frag-cell">${fmtBytes(frag)}</td>`;
-      } else {
-        fragCell = '<td class="frag-cell zero">0</td>';
-      }
-    }
-
-    html += `<tr>
-      <td>${i}</td>
-      <td>${fmtHex(p.startAddress)}</td>
-      <td>${fmtDec(p.startAddress)}</td>
-      <td>${fmtBytes(p.size)}</td>
-      <td>${statusBadge}</td>
-      <td>${procName}</td>
-      ${fragCell}
-    </tr>`;
+  // Wire up buttons
+  document.querySelectorAll('.btn-open').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      manager.openProcess(parseInt(e.target.dataset.pid, 10));
+      render();
+    });
   });
-
-  html += '</tbody></table>';
-  $partTableWrap.innerHTML = html;
+  document.querySelectorAll('.btn-close').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      manager.closeProcess(parseInt(e.target.dataset.pid, 10));
+      render();
+    });
+  });
 }
 
-/* ---- Event log ---- */
-function appendLog(events) {
-  for (const ev of events) {
+function renderTable(state) {
+  if (state.scheme === 'segmentation') {
+    $tableTitle.textContent = "Tabla de Segmentos";
+    let html = `<table class="part-table">
+      <thead><tr>
+        <th>Bloque ID</th><th>Inicio (Hex)</th><th>Tamaño</th><th>Estado / Segmento</th><th>Proceso</th>
+      </tr></thead><tbody>`;
+
+    state.blocks.forEach(b => {
+      const procName = b.isOS ? 'Kernel' : b.isFree ? '—' : esc(b.process.name);
+      const statusBadge = b.isOS 
+        ? '<span class="badge badge-os">SO</span>' 
+        : b.isFree 
+          ? '<span class="badge badge-free">Hueco Libre</span>' 
+          : `<span class="badge badge-occupied">${esc(b.segmentName)}</span>`;
+
+      html += `<tr>
+        <td>${b.id}</td>
+        <td>${fmtHex(b.startAddress)}</td>
+        <td>${fmtBytes(b.size)}</td>
+        <td>${statusBadge}</td>
+        <td>${procName}</td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    $memoryTableWrap.innerHTML = html;
+
+  } else {
+    $tableTitle.textContent = "Tabla de Páginas (Asignaciones)";
+    let html = `<table class="part-table">
+      <thead><tr>
+        <th>PID</th><th>Proceso</th><th>Páginas</th><th>Marcos Físicos Asignados</th>
+      </tr></thead><tbody>`;
+
+    const loadedProcs = state.processes.filter(p => p.state === 'loaded');
+    if (loadedProcs.length === 0) {
+      html += `<tr><td colspan="4" style="text-align:center; color:#999;">No hay procesos cargados</td></tr>`;
+    }
+
+    loadedProcs.forEach(p => {
+      const pagesCount = Math.ceil(p.totalSize / state.pageSizeBytes);
+      const framesStr = p.pageTable.length > 5 
+        ? `${p.pageTable.slice(0, 5).join(', ')}... (+${p.pageTable.length - 5} más)` 
+        : p.pageTable.join(', ');
+
+      html += `<tr>
+        <td>${p.pid}</td>
+        <td>${esc(p.name)}</td>
+        <td>${pagesCount}</td>
+        <td>[${framesStr}]</td>
+      </tr>`;
+    });
+
+    html += '</tbody></table>';
+    $memoryTableWrap.innerHTML = html;
+  }
+}
+
+function renderLogs(state) {
+  $eventLog.innerHTML = '';
+  state.eventLog.forEach(ev => {
     const div = document.createElement('div');
     div.className = 'log-entry';
     div.style.color = ev.color;
     div.textContent = ev.message;
     $eventLog.appendChild(div);
-  }
-  while ($eventLog.childElementCount > 100) {
-    $eventLog.removeChild($eventLog.firstChild);
-  }
+  });
   $eventLog.scrollTop = $eventLog.scrollHeight;
 }
 
@@ -346,100 +305,52 @@ function appendLog(events) {
    ================================================================ */
 
 function doReset() {
-  stopAuto();
-  const osMiB = parseInt($osSize.value, 10) || 1;
-  const mode = $partitionMode.value;
-  const algo = $algorithm.value;
-  const compact = $compaction.checked;
-  manager.reset(Math.max(1, Math.min(6, osMiB)), mode, algo, compact);
-  $eventLog.innerHTML = '';
+  const scheme = $memoryScheme.value;
+  const osSizeMiB = parseInt($osSize.value, 10) || 1;
+  const algorithm = $algorithm.value;
+  const pageSizeKB = parseInt($pageSize.value, 10) || 4;
+
+  if (scheme === 'segmentation') {
+    $segmentationControls.classList.remove('hidden');
+    $pagingControls.classList.add('hidden');
+  } else {
+    $segmentationControls.classList.add('hidden');
+    $pagingControls.classList.remove('hidden');
+  }
+
+  manager.reset({ scheme, osSizeMiB, algorithm, pageSizeKB });
   render();
 }
 
-function doStep() {
-  const events = manager.step();
-  appendLog(events);
-  render();
-}
-
-function toggleAuto() {
-  if (autoInterval) {
-    stopAuto();
-  } else {
-    startAuto();
-  }
-}
-
-function startAuto() {
-  autoInterval = setInterval(doStep, 600);
-  $autoBtn.textContent = '⏸ Pausa';
-  $autoBtn.classList.add('running');
-}
-
-function stopAuto() {
-  if (autoInterval) {
-    clearInterval(autoInterval);
-    autoInterval = null;
-  }
-  $autoBtn.textContent = '⏵ Auto';
-  $autoBtn.classList.remove('running');
-}
-
-function updateCompactionVisibility() {
-  if ($partitionMode.value === 'dynamic') {
-    $compactionWrap.classList.remove('hidden');
-  } else {
-    $compactionWrap.classList.add('hidden');
-    $compaction.checked = false;
-  }
-}
-
-/* ---- Add Process handler ---- */
 function handleAddProcess() {
   const name = $procName.value.trim();
   if (!name) return;
 
-  const opts = {
+  manager.addProcess({
     name,
-    text:     parseInt($procText.value, 10) || 64,
-    data:     parseInt($procData.value, 10) || 16,
-    bss:      parseInt($procBss.value, 10) || 8,
-    heap:     parseInt($procHeap.value, 10) || 32,
-    stack:    parseInt($procStack.value, 10) || 16,
-    burst:    parseInt($procBurst.value, 10) || 3,
-    interval: parseInt($procInterval.value, 10) || 2,
-  };
+    text: parseInt($procText.value, 10) || 64,
+    data: parseInt($procData.value, 10) || 16,
+    bss: parseInt($procBss.value, 10) || 8,
+    heap: parseInt($procHeap.value, 10) || 32,
+    stack: parseInt($procStack.value, 10) || 16
+  });
 
-  const proc = manager.addProcess(opts);
-  const totalKB = (opts.text + opts.data + opts.bss + opts.heap + opts.stack);
-  appendLog([{
-    type: 'info',
-    message: `+ ${proc.name} (PID ${proc.pid}) agregado — ${totalKB} KB`,
-    color: '#2563eb',
-  }]);
-
-  $procName.value = 'MyProc' + proc.pid;
+  $procName.value = 'MyProc' + (manager.processes.length + 1);
   render();
 }
 
 /* ================================================================
    Wire up events
    ================================================================ */
-$stepBtn.addEventListener('click', doStep);
-$autoBtn.addEventListener('click', toggleAuto);
-$resetBtn.addEventListener('click', doReset);
-$addProcBtn.addEventListener('click', handleAddProcess);
-
-$partitionMode.addEventListener('change', () => {
-  updateCompactionVisibility();
-  doReset();
-});
+$memoryScheme.addEventListener('change', doReset);
 $algorithm.addEventListener('change', doReset);
-$compaction.addEventListener('change', doReset);
+$pageSize.addEventListener('change', doReset);
 $osSize.addEventListener('change', doReset);
+$resetBtn.addEventListener('click', doReset);
+$compactBtn.addEventListener('click', () => { manager.compact(); render(); });
+$addProcBtn.addEventListener('click', handleAddProcess);
 
 /* ================================================================
    Initial render
    ================================================================ */
-updateCompactionVisibility();
-render();
+doReset();

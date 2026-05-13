@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Simulador interactivo de gestión de memoria de sistema operativo — particiones fijas, variables y dinámicas con algoritmos First Fit, Best Fit y Worst Fit." />
+  <meta name="description" content="Simulador interactivo de gestión de memoria de sistema operativo — Segmentación y Paginación." />
   <title>Simulador de Gestión de Memoria — OS Memory Sim</title>
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -11,7 +11,7 @@
 
 <header id="app-header">
   <h1>⚙ Simulador de Gestión de Memoria</h1>
-  <span class="step-badge" id="stepBadge">Paso 0</span>
+  <span class="step-badge" id="stepBadge">Esquema: Segmentación</span>
 </header>
 
 <div class="app" id="app">
@@ -20,74 +20,71 @@
   <aside class="panel control-panel" id="controlPanel">
     <h2>Panel de Control</h2>
 
-    <label for="partitionMode">Modo de Partición</label>
-    <select id="partitionMode">
-      <option value="fixed">Fijas (1 MiB c/u)</option>
-      <option value="variable">Variables predefinidas</option>
-      <option value="dynamic">Dinámicas</option>
+    <label for="memoryScheme">Esquema de Memoria</label>
+    <select id="memoryScheme">
+      <option value="segmentation">Segmentación</option>
+      <option value="paging">Paginación</option>
     </select>
 
-    <label for="algorithm">Algoritmo</label>
-    <select id="algorithm">
-      <option value="firstFit">First Fit</option>
-      <option value="bestFit">Best Fit</option>
-      <option value="worstFit">Worst Fit</option>
-    </select>
+    <div id="segmentationControls">
+      <label for="algorithm">Algoritmo (Segmentación)</label>
+      <select id="algorithm">
+        <option value="firstFit">First Fit</option>
+        <option value="bestFit">Best Fit</option>
+        <option value="worstFit">Worst Fit</option>
+      </select>
+      
+      <button id="compactBtn" class="btn btn-primary" style="margin-top:10px;" title="Compactar Memoria">▼ Compactar Memoria</button>
+    </div>
 
-    <div id="compactionWrap" class="hidden">
-      <label class="checkbox-label">
-        <input type="checkbox" id="compactionToggle" />
-        <span>Compactación automática</span>
-      </label>
+    <div id="pagingControls" class="hidden">
+      <label for="pageSize">Tamaño de Página</label>
+      <select id="pageSize">
+        <option value="4">4 KB</option>
+        <option value="8">8 KB</option>
+        <option value="16">16 KB</option>
+        <option value="32">32 KB</option>
+        <option value="64">64 KB</option>
+      </select>
     </div>
 
     <label for="osSize">Tamaño SO (MiB)</label>
     <input type="number" id="osSize" min="1" max="6" value="1" />
 
     <div class="btn-group">
-      <button id="stepBtn" class="btn btn-primary" title="Avanzar un paso">▶ Paso</button>
-      <button id="autoBtn" class="btn btn-secondary" title="Auto 600ms/tick">⏵ Auto</button>
-      <button id="resetBtn" class="btn btn-danger" title="Reiniciar">↺</button>
+      <button id="resetBtn" class="btn btn-danger" title="Reiniciar">↺ Formatear Memoria</button>
     </div>
 
     <!-- Add Process Form -->
-    <h3>Agregar Proceso</h3>
-    <p class="form-desc">Segmentos de memoria en KB</p>
+    <h3>Crear Proceso Manual</h3>
+    <p class="form-desc">Tamaños de segmentos en KB</p>
     <div class="add-proc-form" id="addProcForm">
       <div class="form-group full-width">
         <label>Nombre</label>
         <input type="text" id="procName" placeholder="Ej: Firefox" value="MyProc" />
       </div>
       <div class="form-group">
-        <label>Text (KB)</label>
+        <label>Text</label>
         <input type="number" id="procText" value="128" />
       </div>
       <div class="form-group">
-        <label>Data (KB)</label>
+        <label>Data</label>
         <input type="number" id="procData" value="32" />
       </div>
       <div class="form-group">
-        <label>BSS (KB)</label>
+        <label>BSS</label>
         <input type="number" id="procBss" value="16" />
       </div>
       <div class="form-group">
-        <label>Heap (KB)</label>
+        <label>Heap</label>
         <input type="number" id="procHeap" value="48" />
       </div>
       <div class="form-group">
-        <label>Stack (KB)</label>
+        <label>Stack</label>
         <input type="number" id="procStack" value="32" />
       </div>
-      <div class="form-group">
-        <label>Burst (pasos)</label>
-        <input type="number" id="procBurst" value="3" />
-      </div>
-      <div class="form-group">
-        <label>Intervalo (pasos)</label>
-        <input type="number" id="procInterval" value="2" />
-      </div>
     </div>
-    <button id="addProcBtn" class="btn btn-add">+ Agregar Proceso</button>
+    <button id="addProcBtn" class="btn btn-add">+ Crear Proceso</button>
 
     <h3>Registro de Eventos</h3>
     <div class="event-log" id="eventLog"></div>
@@ -99,7 +96,7 @@
     <!-- Top: Memory map + Process cards -->
     <section class="top-row">
       <div class="panel memory-panel" id="memoryPanel">
-        <h2>Mapa de Memoria</h2>
+        <h2>Mapa de Memoria Física (16 MiB)</h2>
         <div class="memory-bar-wrap">
           <div class="memory-bar" id="memoryBar"></div>
           <div class="memory-tooltip" id="memTooltip"></div>
@@ -108,24 +105,16 @@
       </div>
 
       <div class="panel process-panel" id="processPanel">
-        <h2>Procesos</h2>
+        <h2>Gestor de Tareas</h2>
         <div class="process-cards" id="processCards"></div>
       </div>
     </section>
 
-    <!-- Middle: Memory History -->
-    <section class="mid-row">
-      <div class="panel history-panel" id="historyPanel">
-        <h2>Historial de Memoria</h2>
-        <div class="memory-history" id="memoryHistory"></div>
-      </div>
-    </section>
-
-    <!-- Bottom: Partition Table -->
+    <!-- Bottom: Partition/Page Table -->
     <section class="bottom-row">
       <div class="panel table-panel" id="tablePanel">
-        <h2>Tabla de Particiones</h2>
-        <div class="table-wrap" id="partitionTableWrap"></div>
+        <h2 id="tableTitle">Tabla de Direcciones</h2>
+        <div class="table-wrap" id="memoryTableWrap"></div>
       </div>
     </section>
 

@@ -1,6 +1,5 @@
 /* =================================================================
    style.css — Clean white / light theme
-   Color scheme: OS=yellow, loaded=green, free=gray, failed=red
    ================================================================= */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -105,7 +104,7 @@ body {
   gap: 4px;
   overflow-y: auto;
 }
-.control-panel > label {
+.control-panel > label, #segmentationControls > label, #pagingControls > label {
   font-size: .72rem;
   color: var(--text-dim);
   margin-top: 3px;
@@ -127,19 +126,7 @@ body {
   border-color: var(--accent);
 }
 
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: .82rem;
-  cursor: pointer;
-  padding: 3px 0;
-}
-.checkbox-label input[type="checkbox"] {
-  accent-color: var(--accent);
-  width: 14px;
-  height: 14px;
-}
+.hidden { display: none !important; }
 
 /* Buttons */
 .btn-group {
@@ -161,15 +148,17 @@ body {
 }
 .btn:hover { background: var(--bg-panel); }
 .btn:active { transform: scale(.97); }
-.btn-primary { border-color: var(--accent); color: var(--accent); }
+.btn-primary { border-color: var(--accent); color: var(--accent); width: 100%; }
 .btn-primary:hover { background: #eff6ff; }
-.btn-secondary { border-color: var(--green); color: var(--green); }
-.btn-secondary:hover { background: #f0fdf4; }
-.btn-secondary.running { background: #dcfce7; }
 .btn-danger { border-color: var(--red); color: var(--red); }
 .btn-danger:hover { background: #fef2f2; }
 .btn-add { width: 100%; margin-top: 4px; border-color: var(--accent); color: var(--accent); }
 .btn-add:hover { background: #eff6ff; }
+
+.btn-open { border-color: var(--green); color: var(--green); padding: 4px; font-size: 0.7rem; }
+.btn-open:hover { background: #f0fdf4; }
+.btn-close { border-color: var(--red); color: var(--red); padding: 4px; font-size: 0.7rem; }
+.btn-close:hover { background: #fef2f2; }
 
 /* ---- Add-process form ---- */
 .form-desc {
@@ -206,13 +195,12 @@ body {
   width: 100%;
 }
 .form-group input:focus { border-color: var(--accent); }
-.form-group input::placeholder { color: #bbb; }
 
 /* Event log */
 .event-log {
   flex: 1;
-  min-height: 50px;
-  max-height: 120px;
+  min-height: 80px;
+  max-height: 200px;
   overflow-y: auto;
   background: var(--bg-panel);
   border: 1px solid var(--border);
@@ -227,8 +215,6 @@ body {
   border-bottom: 1px solid #f0f0f0;
 }
 
-.hidden { display: none !important; }
-
 /* ---- Main content ---- */
 .main-content {
   display: flex;
@@ -241,15 +227,12 @@ body {
   grid-template-columns: 200px 1fr;
   gap: var(--gap);
   flex: 1 1 auto;
-  min-height: 450px;
-}
-.mid-row {
-  flex: 0 0 auto;
-  max-height: 220px;
+  min-height: 400px;
 }
 .bottom-row {
   flex: 0 0 auto;
-  max-height: 240px;
+  height: 35%;
+  min-height: 200px;
 }
 
 /* ---- Memory Map (vertical bar, BOTTOM TO TOP) ---- */
@@ -266,7 +249,8 @@ body {
   width: 100%;
   height: 100%;
   border-radius: var(--radius-sm);
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column-reverse;  /* Bottom to top: lowest address at bottom */
   border: 1px solid var(--border-dark);
@@ -286,6 +270,8 @@ body {
   overflow: hidden;
   white-space: nowrap;
   border-top: 1px solid rgba(0,0,0,.08);
+  min-height: 20px; /* Asegura que siempre sean visibles y se puedan hacer hover */
+  flex-shrink: 0;
 }
 .mem-block:hover {
   filter: brightness(.93);
@@ -312,33 +298,49 @@ body {
   color: var(--text-dim);
 }
 
-/* Occupied (loaded process) = GREEN */
+/* Occupied (loaded segment or frame) = process color tint */
 .mem-block.proc-block {
   background: var(--green-bg);
   border-left: 3px solid var(--green-border);
   color: #14532d;
 }
 
-/* Tooltip */
+/* Paging small frames */
+.mem-block.frame-block {
+  justify-content: center;
+  border-top: 1px solid rgba(0,0,0,0.02);
+}
+.frame-block .block-addr { display: none; }
+.frame-block .block-label { font-size: 0.4rem; opacity: 0.8; }
+
+/* Tooltip — fixed to viewport so it never gets clipped by any panel */
 .memory-tooltip {
-  position: absolute;
+  position: fixed;
   pointer-events: none;
   background: #fff;
   border: 1px solid var(--border-dark);
   border-radius: var(--radius-sm);
-  padding: 6px 10px;
+  padding: 8px 12px;
   font-family: var(--mono);
-  font-size: .7rem;
-  line-height: 1.5;
+  font-size: .72rem;
+  line-height: 1.65;
   color: var(--text);
-  z-index: 100;
+  z-index: 9999;
   opacity: 0;
   transition: opacity .12s;
   white-space: nowrap;
-  left: calc(100% + 8px);
-  box-shadow: 0 2px 8px rgba(0,0,0,.1);
+  box-shadow: 0 4px 16px rgba(0,0,0,.15);
+  max-width: 320px;
 }
 .memory-tooltip.visible { opacity: 1; }
+.memory-tooltip strong { font-size: .8rem; color: var(--text); }
+.tip-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+.tip-row span:first-child { color: var(--text-dim); }
+.tip-row span:last-child  { font-weight: 600; color: var(--text); }
 
 /* Metrics */
 .metrics {
@@ -373,7 +375,7 @@ body {
 }
 .process-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 6px;
   overflow-y: auto;
   flex: 1;
@@ -386,18 +388,20 @@ body {
   border-radius: var(--radius);
   padding: 8px 10px;
   transition: border-color .2s, box-shadow .2s, background .2s;
+  display: flex;
+  flex-direction: column;
 }
 /* Loaded = green */
 .proc-card.state-card-loaded {
   border-color: var(--green-border);
   background: #f0fdf4;
 }
-/* Waiting = gray (default) */
-.proc-card.state-card-waiting {
+/* Closed = gray (default) */
+.proc-card.state-card-closed {
   border-color: var(--border);
   background: var(--bg-panel);
 }
-/* Failed (has failures) = red tint when waiting */
+/* Failed = red */
 .proc-card.state-card-failed {
   border-color: var(--red);
   background: var(--red-bg);
@@ -435,92 +439,29 @@ body {
 .proc-card .card-info {
   font-size: .7rem;
   color: var(--text-dim);
-  margin-bottom: 4px;
+  margin-bottom: 8px;
   display: flex;
   justify-content: space-between;
+  align-items: center;
 }
 .state-badge {
   font-size: .6rem;
-  padding: 1px 6px;
+  padding: 2px 6px;
   border-radius: 8px;
   font-weight: 600;
   text-transform: uppercase;
 }
 .state-loaded { background: var(--green-bg); color: var(--green); }
-.state-waiting { background: var(--gray-bg); color: var(--text-dim); }
+.state-closed { background: var(--gray-bg); color: var(--text-dim); }
+.state-failed { background: var(--red-bg); color: var(--red); }
 
-.progress-wrap {
-  height: 5px;
-  background: #e5e7eb;
-  border-radius: 3px;
-  overflow: hidden;
-  margin-bottom: 3px;
-}
-.progress-fill {
-  height: 100%;
-  border-radius: 3px;
-  transition: width .3s ease;
-}
-.progress-label {
-  font-size: .62rem;
-  color: var(--text-dim);
+.card-actions {
   display: flex;
-  justify-content: space-between;
+  gap: 5px;
+  margin-top: auto;
 }
-.failures { color: var(--red); font-weight: 600; }
 
-/* ---- Memory History ---- */
-.history-panel {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-.memory-history {
-  flex: 1;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.history-entry {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.history-step-label {
-  font-family: var(--mono);
-  font-size: .62rem;
-  color: var(--text-dim);
-  min-width: 36px;
-  text-align: right;
-  flex-shrink: 0;
-}
-.history-bar {
-  flex: 1;
-  height: 18px;
-  display: flex;
-  border-radius: 3px;
-  overflow: hidden;
-  border: 1px solid var(--border);
-}
-.history-block {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: .5rem;
-  font-family: var(--mono);
-  overflow: hidden;
-  white-space: nowrap;
-  color: #333;
-  border-right: 1px solid rgba(0,0,0,.06);
-}
-.history-block.os { background: var(--yellow-bg); color: #92400e; }
-.history-block.free { background: var(--free-color); color: var(--text-dim); }
-.history-block.proc { background: var(--green-bg); color: #14532d; }
-.history-block:last-child { border-right: none; }
-
-/* ---- Partition Table ---- */
+/* ---- Partition/Page Table ---- */
 .table-panel {
   display: flex;
   flex-direction: column;
@@ -528,7 +469,9 @@ body {
 }
 .table-wrap {
   flex: 1;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: auto;
+  max-height: 100%;
 }
 .part-table {
   width: 100%;
@@ -572,14 +515,3 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
-
-/* ---- Responsive ---- */
-@media (max-width: 768px) {
-  .app {
-    grid-template-columns: 1fr;
-    height: auto;
-    overflow: auto;
-  }
-  .top-row { grid-template-columns: 1fr; }
-  .memory-bar-wrap { min-height: 200px; }
-}

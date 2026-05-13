@@ -1,112 +1,58 @@
 /**
  * processes.js
  * Defines process templates and factory for the memory simulator.
- * Each process has segments (text, data, bss), heap, stack,
- * burst (steps in memory), and interval (steps waiting before retry).
+ * Each process has discrete segments: text, data, bss, heap, stack.
  */
 
-// Color palette — used only for distinguishing labels, NOT for block colors
 export const PROCESS_COLORS = [
-  '#ef4444', // red
-  '#3b82f6', // blue
-  '#8b5cf6', // violet
-  '#f97316', // orange
-  '#06b6d4', // cyan
-  '#ec4899', // pink
-  '#14b8a6', // teal
-  '#a855f7', // purple
+  '#ef4444', '#3b82f6', '#8b5cf6', '#f97316', 
+  '#06b6d4', '#ec4899', '#14b8a6', '#a855f7'
 ];
 
 const KB = 1024;
 const MB = 1024 * KB;
 
-/**
- * 5 pre-loaded process templates — realistic app names.
- * totalSize = text + data + bss + heap + stack
- */
 export const PROCESS_TEMPLATES = [
   {
     name: 'Google Chrome',
-    segments: { text: 2 * MB, data: 512 * KB, bss: 128 * KB },
-    heap: 256 * KB,
-    stack: 128 * KB,
-    // total = 3 MiB
-    burst: 5,
-    interval: 3,
+    segments: { text: 2 * MB, data: 512 * KB, bss: 128 * KB, heap: 256 * KB, stack: 128 * KB }
   },
   {
     name: 'Steam',
-    segments: { text: 1 * MB, data: 256 * KB, bss: 128 * KB },
-    heap: 384 * KB,
-    stack: 256 * KB,
-    // total = 2 MiB
-    burst: 4,
-    interval: 2,
+    segments: { text: 1 * MB, data: 256 * KB, bss: 128 * KB, heap: 384 * KB, stack: 256 * KB }
   },
   {
     name: 'Discord',
-    segments: { text: 256 * KB, data: 64 * KB, bss: 32 * KB },
-    heap: 96 * KB,
-    stack: 64 * KB,
-    // total = 512 KB
-    burst: 3,
-    interval: 1,
+    segments: { text: 256 * KB, data: 64 * KB, bss: 32 * KB, heap: 96 * KB, stack: 64 * KB }
   },
   {
     name: 'Minecraft',
-    segments: { text: 768 * KB, data: 256 * KB, bss: 128 * KB },
-    heap: 640 * KB,
-    stack: 256 * KB,
-    // total = 2 MiB
-    burst: 4,
-    interval: 3,
+    segments: { text: 768 * KB, data: 256 * KB, bss: 128 * KB, heap: 640 * KB, stack: 256 * KB }
   },
   {
     name: 'VS Code',
-    segments: { text: 512 * KB, data: 128 * KB, bss: 64 * KB },
-    heap: 192 * KB,
-    stack: 128 * KB,
-    // total = 1 MiB
-    burst: 3,
-    interval: 2,
-  },
+    segments: { text: 512 * KB, data: 128 * KB, bss: 64 * KB, heap: 192 * KB, stack: 128 * KB }
+  }
 ];
 
 let nextPid = 1;
 
-/**
- * Creates a live process instance from a template.
- * @param {object} template - One of PROCESS_TEMPLATES
- * @param {number} colorIndex - Index into PROCESS_COLORS
- * @returns {object} Process instance with runtime state
- */
 export function createProcess(template, colorIndex) {
-  const totalSize =
-    template.segments.text +
-    template.segments.data +
-    template.segments.bss +
-    template.heap +
-    template.stack;
+  const segments = { ...template.segments };
+  const totalSize = Object.values(segments).reduce((a, b) => a + b, 0);
 
   return {
     name: template.name,
     pid: nextPid++,
-    segments: { ...template.segments },
-    heap: template.heap,
-    stack: template.stack,
+    segments,
     totalSize,
-    burst: template.burst,
-    burstRemaining: 0,
-    interval: template.interval,
-    intervalRemaining: 0,
-    state: 'waiting',
-    failures: 0,
+    state: 'closed', // 'closed', 'loaded', 'failed'
     color: PROCESS_COLORS[colorIndex % PROCESS_COLORS.length],
-    partitionId: null,
+    allocatedSegments: [], // To track where segments are in Segmentation
+    pageTable: [] // To track pages to frames in Paging
   };
 }
 
-/** Reset the PID counter (used on simulation reset). */
 export function resetPidCounter() {
   nextPid = 1;
 }
