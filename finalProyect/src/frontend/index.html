@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Simulador de Memoria</title>
+  <style>
+    :root {
+      --bg-color: #f8f9fa;
+      --card-bg: #ffffff;
+      --text-color: #333333;
+      --border-color: #e0e0e0;
+      --primary: #0056b3;
+      --primary-hover: #004494;
+      --danger: #dc3545;
+      --danger-hover: #c82333;
+      --success: #28a745;
+      --success-hover: #218838;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: var(--font-family);
+      margin: 0;
+      padding: 20px;
+      line-height: 1.5;
+    }
+    h1, h2, h3 { font-weight: 600; margin-top: 0; }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .full-width { grid-column: 1 / -1; }
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 0.9em; }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-family: inherit;
+    }
+    button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 0.9em;
+    }
+    button:hover { background-color: var(--primary-hover); }
+    button.danger { background-color: var(--danger); }
+    button.danger:hover { background-color: var(--danger-hover); }
+    button.success { background-color: var(--success); }
+    button.success:hover { background-color: var(--success-hover); }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; }
+    th, td { border: 1px solid var(--border-color); padding: 8px; text-align: left; }
+    th { background-color: #f1f1f1; }
+    .ram-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .frame {
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 8px;
+      font-size: 0.8em;
+      background-color: #fafafa;
+    }
+    .frame.occupied { background-color: #e3f2fd; border-color: #90caf9; }
+    .flex-between { display: flex; justify-content: space-between; align-items: center; }
+    .action-bar { margin-top: 15px; display: flex; gap: 10px; }
+    .path-visualizer {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+      font-size: 0.9em;
+    }
+    .path-step {
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background-color: #fafafa;
+    }
+    .path-arrow { color: #888; }
+    .seg-row { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
+    .seg-row label { margin-bottom: 0; min-width: 60px; }
+    .seg-row input { width: 120px; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- ===== 1. Arquitectura ===== -->
+    <div class="card">
+      <h2>1. Arquitectura del Sistema</h2>
+      <div class="form-group">
+        <label>Bits Dirección Lógica</label>
+        <input type="number" id="logicBits" value="32">
+      </div>
+      <div class="form-group">
+        <label>Bits Dirección Física</label>
+        <input type="number" id="physBits" value="32">
+      </div>
+      <div class="form-group">
+        <label>Tamaño de Página (Bytes)</label>
+        <input type="number" id="pageSize" value="4096">
+      </div>
+      <button id="btnConfig">Configurar</button>
+      <div id="archInfo" style="margin-top: 15px; display: none;">
+        <h3>Resultado:</h3>
+        <ul>
+          <li>Segment Bits: <span id="infoSegBits"></span></li>
+          <li>Page Bits: <span id="infoPageBits"></span></li>
+          <li>Offset Bits: <span id="infoOffsetBits"></span></li>
+          <li>Máx Segmentos: <span id="infoMaxSegs"></span></li>
+          <li>Máx Páginas por Segmento: <span id="infoMaxPages"></span></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ===== 2. Crear Proceso ===== -->
+    <div class="card">
+      <h2>2. Crear Proceso</h2>
+      <div class="form-group">
+        <label>Nombre del Proceso</label>
+        <input type="text" id="procName" placeholder="Ej: Navegador">
+      </div>
+      <h4>Segmentos (CODE, DATA, STACK, HEAP)</h4>
+      <div class="seg-row">
+        <label>CODE</label>
+        <input type="number" id="segCode" value="8192" placeholder="Bytes">
+      </div>
+      <div class="seg-row">
+        <label>DATA</label>
+        <input type="number" id="segData" value="8192" placeholder="Bytes">
+      </div>
+      <div class="seg-row">
+        <label>STACK</label>
+        <input type="number" id="segStack" value="16384" placeholder="Bytes">
+      </div>
+      <div class="seg-row">
+        <label>HEAP</label>
+        <input type="number" id="segHeap" value="32768" placeholder="Bytes">
+      </div>
+      <button id="btnCreateProcess" class="success" style="margin-top:10px;">Crear Proceso</button>
+    </div>
+
+    <!-- ===== 2b. Lista y detalle de procesos ===== -->
+    <div class="card full-width">
+      <h2>2. Gestión de Procesos</h2>
+      <div style="display: flex; gap: 20px;">
+        <div style="flex: 1;">
+          <h3>Lista de Procesos</h3>
+          <select id="procList" size="6" style="margin-bottom: 15px;"></select>
+          <div class="action-bar">
+            <button id="btnLoadProcess" class="success">Cargar en RAM</button>
+            <button id="btnRemoveProcess" class="danger">Remover de RAM</button>
+            <button id="btnDeleteProcess" class="danger">Eliminar</button>
+          </div>
+        </div>
+        <div style="flex: 2;">
+          <div id="procDetails" style="display: none;">
+            <h3>Detalle del Proceso</h3>
+            <p><strong>Tamaño Total:</strong> <span id="detailSize"></span> bytes</p>
+            <p><strong>Páginas Totales:</strong> <span id="detailPages"></span></p>
+            <p><strong>Marcos Usados:</strong> <span id="detailFrames"></span></p>
+            <h4>Segmentos</h4>
+            <table>
+              <thead>
+                <tr><th>ID</th><th>Nombre</th><th>Tamaño (B)</th><th>Páginas</th><th>Marcos</th></tr>
+              </thead>
+              <tbody id="segmentsTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 3. RAM ===== -->
+    <div class="card full-width">
+      <h2>3. Memoria Principal (RAM)</h2>
+      <div class="flex-between">
+        <p>Estado de los Marcos (Actualización automática)</p>
+        <button id="btnRefreshRAM">Refrescar</button>
+      </div>
+      <div class="ram-grid" id="ramGrid"></div>
+    </div>
+
+    <!-- ===== 4. Traducción ===== -->
+    <div class="card full-width">
+      <h2>4. Traducción de Direcciones</h2>
+      <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+        <div class="form-group" style="flex:1; min-width:120px;">
+          <label>PID</label>
+          <input type="number" id="transPid" placeholder="Ej: 1">
+        </div>
+        <div class="form-group" style="flex:1; min-width:120px;">
+          <label>Segmento</label>
+          <input type="number" id="transSeg" placeholder="Ej: 0">
+        </div>
+        <div class="form-group" style="flex:1; min-width:120px;">
+          <label>Página</label>
+          <input type="number" id="transPage" placeholder="Ej: 0">
+        </div>
+        <div class="form-group" style="flex:1; min-width:120px;">
+          <label>Offset</label>
+          <input type="number" id="transOffset" placeholder="Ej: 100">
+        </div>
+        <div style="display:flex; align-items:flex-end;">
+          <button id="btnTranslate">Traducir</button>
+        </div>
+      </div>
+      <div id="translationResult" style="margin-top: 15px; display: none;">
+        <h3>Resultado</h3>
+        <p><strong>Dirección Física: </strong><span id="transResultPhys"></span></p>
+        <div class="path-visualizer" id="transPath"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module">
+    import {
+      ConfigureArchitectureService,
+      CreateProcessService,
+      LoadProcessIntoMemoryService,
+      RemoveProcessFromMemoryService,
+      TranslateAddressService,
+      MemoryVisualizationService,
+      ProcessVisualizationService,
+      SegmentTableService,
+    } from '../application/index.js';
+
+    const configService = new ConfigureArchitectureService();
+    let createProcessService = new CreateProcessService();
+    let loadProcessService = new LoadProcessIntoMemoryService();
+    let removeProcessService = new RemoveProcessFromMemoryService();
+    let translateAddressService = new TranslateAddressService();
+    let memoryVisService = new MemoryVisualizationService();
+    let processVisService = new ProcessVisualizationService();
+    let segmentTableService = new SegmentTableService();
+
+    let archData = null;
+
+    function reinitServices() {
+      createProcessService = new CreateProcessService();
+      loadProcessService = new LoadProcessIntoMemoryService();
+      removeProcessService = new RemoveProcessFromMemoryService();
+      translateAddressService = new TranslateAddressService();
+      memoryVisService = new MemoryVisualizationService();
+      processVisService = new ProcessVisualizationService();
+      segmentTableService = new SegmentTableService();
+    }
+
+    // ========== 1. Arquitectura ==========
+    document.getElementById('btnConfig').addEventListener('click', () => {
+      const logicBits = parseInt(document.getElementById('logicBits').value);
+      const physBits = parseInt(document.getElementById('physBits').value);
+      const pageSizeVal = parseInt(document.getElementById('pageSize').value);
+
+      try {
+        configService.configure(logicBits, physBits, pageSizeVal);
+        reinitServices();
+      } catch (e) {
+        console.warn('configure() error:', e.message);
+      }
+
+      const info = configService.getArchitectureInfo();
+      archData = info;
+
+      document.getElementById('infoSegBits').textContent = info.segmentation.segmentIdBits;
+      document.getElementById('infoPageBits').textContent = info.paging.pageIdBits;
+      document.getElementById('infoOffsetBits').textContent = info.paging.offsetBits;
+      document.getElementById('infoMaxSegs').textContent = info.segmentation.maxSegments;
+      document.getElementById('infoMaxPages').textContent = info.paging.pagesPerSegment;
+
+      document.getElementById('logicBits').value = info.addressingScheme.logicalAddressBits;
+      document.getElementById('physBits').value = info.addressingScheme.physicalAddressBits;
+      document.getElementById('pageSize').value = info.paging.pageSize;
+
+      document.getElementById('archInfo').style.display = 'block';
+      refreshProcessList();
+      refreshRAM();
+    });
+
+    // Init arquitectura
+    document.getElementById('btnConfig').click();
+
+    // ========== 2. Crear Proceso ==========
+    document.getElementById('btnCreateProcess').addEventListener('click', () => {
+      const name = document.getElementById('procName').value.trim() || 'Unnamed';
+      const segments = [
+        { type: 'CODE',  sizeBytes: parseInt(document.getElementById('segCode').value) || 8192 },
+        { type: 'DATA',  sizeBytes: parseInt(document.getElementById('segData').value) || 8192 },
+        { type: 'STACK', sizeBytes: parseInt(document.getElementById('segStack').value) || 16384 },
+        { type: 'HEAP',  sizeBytes: parseInt(document.getElementById('segHeap').value) || 32768 },
+      ];
+
+      const result = createProcessService.createProcess(name, segments);
+      if (result.success) {
+        alert('Proceso creado con PID: ' + result.pid);
+        refreshProcessList();
+        refreshRAM();
+      } else {
+        alert('Error: ' + result.error);
+      }
+    });
+
+    // ========== Lista de procesos ==========
+    function refreshProcessList() {
+      const list = processVisService.getProcessList();
+      const select = document.getElementById('procList');
+      const prevValue = select.value;
+      select.innerHTML = '';
+      if (list && list.processes) {
+        list.processes.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.pid;
+          opt.textContent = `[${p.pid}] ${p.name}`;
+          select.appendChild(opt);
+        });
+      }
+      if (prevValue && select.querySelector(`option[value="${prevValue}"]`)) {
+        select.value = prevValue;
+      }
+    }
+
+    function showProcessDetail(pid) {
+      const detail = processVisService.getProcessDetail(pid);
+      if (!detail || detail.error) {
+        document.getElementById('procDetails').style.display = 'none';
+        return;
+      }
+
+      document.getElementById('detailSize').textContent = detail.processDTO?.allocatedMemory ?? 0;
+      document.getElementById('detailPages').textContent = detail.details?.totalPages ?? 0;
+      document.getElementById('detailFrames').textContent = detail.details?.totalFrames ?? 0;
+
+      // Tabla de segmentos
+      const segResult = segmentTableService.getSegmentTable(pid);
+      const tbody = document.getElementById('segmentsTableBody');
+      tbody.innerHTML = '';
+
+      if (segResult && segResult.segmentTableDTO && segResult.segmentTableDTO.segments) {
+        segResult.segmentTableDTO.segments.forEach(seg => {
+          const presentPages = seg.pages ? seg.pages.filter(p => p.isPresent).length : 0;
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${seg.segmentId}</td>
+            <td>${seg.type}</td>
+            <td>${seg.sizeBytes}</td>
+            <td>${seg.pageCount}</td>
+            <td>${presentPages}</td>`;
+          tbody.appendChild(tr);
+        });
+      }
+
+      document.getElementById('procDetails').style.display = 'block';
+    }
+
+    document.getElementById('procList').addEventListener('change', (e) => {
+      const pid = parseInt(e.target.value);
+      if (isNaN(pid)) return;
+      showProcessDetail(pid);
+    });
+
+    // ========== Acciones de proceso ==========
+    document.getElementById('btnLoadProcess').addEventListener('click', () => {
+      const pid = parseInt(document.getElementById('procList').value);
+      if (isNaN(pid)) return alert('Seleccione un proceso');
+      const res = loadProcessService.loadProcessIntoMemory(pid, 'preload');
+      alert(res.success
+        ? `Cargado: ${res.loadedFrames} marcos asignados`
+        : 'Error: ' + res.error);
+      showProcessDetail(pid);
+      refreshRAM();
+    });
+
+    document.getElementById('btnRemoveProcess').addEventListener('click', () => {
+      const pid = parseInt(document.getElementById('procList').value);
+      if (isNaN(pid)) return alert('Seleccione un proceso');
+      const res = removeProcessService.removeProcess(pid);
+      alert(res.success ? 'Removido de RAM' : 'Error: ' + res.error);
+      refreshProcessList();
+      refreshRAM();
+      document.getElementById('procDetails').style.display = 'none';
+    });
+
+    document.getElementById('btnDeleteProcess').addEventListener('click', () => {
+      const pid = parseInt(document.getElementById('procList').value);
+      if (isNaN(pid)) return alert('Seleccione un proceso');
+      const res = removeProcessService.removeProcess(pid);
+      alert(res.success ? 'Proceso eliminado' : 'Error: ' + res.error);
+      refreshProcessList();
+      refreshRAM();
+      document.getElementById('procDetails').style.display = 'none';
+    });
+
+    // ========== 3. RAM ==========
+    function refreshRAM() {
+      const layout = memoryVisService.getMemoryLayout();
+      const grid = document.getElementById('ramGrid');
+      grid.innerHTML = '';
+
+      if (layout && layout.frames) {
+        layout.frames.forEach(f => {
+          const div = document.createElement('div');
+          div.className = 'frame ' + (f.isAllocated ? 'occupied' : '');
+          let html = `<strong>Frame ${f.frameNumber}</strong><br>`;
+          if (f.isAllocated) {
+            html += `PID: ${f.ownerPid}<br>Seg: ${f.segmentId}<br>Pag: ${f.pageId}`;
+          } else {
+            html += `Libre`;
+          }
+          div.innerHTML = html;
+          grid.appendChild(div);
+        });
+      }
+    }
+
+    document.getElementById('btnRefreshRAM').addEventListener('click', refreshRAM);
+
+    // ========== 4. Traducción ==========
+    document.getElementById('btnTranslate').addEventListener('click', () => {
+      const pid = parseInt(document.getElementById('transPid').value);
+      const segId = parseInt(document.getElementById('transSeg').value);
+      const pageId = parseInt(document.getElementById('transPage').value);
+      const offset = parseInt(document.getElementById('transOffset').value);
+
+      if (isNaN(pid) || isNaN(segId) || isNaN(pageId) || isNaN(offset)) {
+        return alert('Complete todos los campos de traducción.');
+      }
+
+      if (!archData) {
+        return alert('Primero configure la arquitectura.');
+      }
+
+      const pBits = archData.paging.pageIdBits;
+      const oBits = archData.paging.offsetBits;
+      const logicalAddress = (segId << (pBits + oBits)) | (pageId << oBits) | offset;
+
+      const res = translateAddressService.translateAddress(pid, logicalAddress);
+
+      const display = document.getElementById('translationResult');
+      const pathEl = document.getElementById('transPath');
+      display.style.display = 'block';
+      pathEl.innerHTML = '';
+
+      if (res.success) {
+        const t = res.translation;
+        document.getElementById('transResultPhys').textContent = t.physicalAddress;
+
+        const steps = [
+          `Proceso: PID ${pid}`,
+          `Tabla de Segmentos`,
+          `Segmento: ${t.segmentId}`,
+          `Tabla de Páginas`,
+          `Página: ${t.pageId}`,
+          `Frame: ${t.frameNumber}`,
+          `Dir. Física: ${t.physicalAddress}`
+        ];
+
+        steps.forEach((step, i) => {
+          const stepDiv = document.createElement('div');
+          stepDiv.className = 'path-step';
+          stepDiv.textContent = step;
+          pathEl.appendChild(stepDiv);
+          if (i < steps.length - 1) {
+            const arrowDiv = document.createElement('div');
+            arrowDiv.className = 'path-arrow';
+            arrowDiv.textContent = '→';
+            pathEl.appendChild(arrowDiv);
+          }
+        });
+      } else {
+        document.getElementById('transResultPhys').textContent = 'Error';
+        pathEl.innerHTML = `<div class="path-step" style="border-color:red;color:red;">Error: ${res.error}</div>`;
+      }
+    });
+
+    // ========== Init ==========
+    refreshProcessList();
+    refreshRAM();
+    setInterval(() => { refreshRAM(); refreshProcessList(); }, 2000);
+  </script>
+</body>
+</html>

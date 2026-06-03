@@ -221,7 +221,7 @@ export class CreateProcessService {
 
     // Tomar el primer marco disponible
     const frameNumber = availableFrames[0];
-    this.ram.allocateFrame(frameNumber, pid);
+    this.ram.allocateFrame(frameNumber, pid, segmentId, pageId);
 
     return frameNumber;
   }

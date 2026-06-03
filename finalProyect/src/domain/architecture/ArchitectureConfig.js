@@ -62,6 +62,42 @@ class ArchitectureConfig {
   }
 
   /**
+   * Reconfigura la arquitectura con nuevos valores.
+   * Resetea el singleton (y dependientes como RAM).
+   * @static
+   * @param {number} logicalBits
+   * @param {number} physicalBits
+   * @param {number} pageSize
+   */
+  static reconfigure(logicalBits, physicalBits, pageSize) {
+    // Destruir singleton anterior
+    ArchitectureConfig._instance = null;
+
+    // Crear nuevo con valores personalizados
+    const config = new ArchitectureConfig();
+    // Como Object.freeze ya se aplicó, necesitamos un approach diferente:
+    // Creamos un objeto no-frozen temporalmente
+    ArchitectureConfig._instance = null;
+
+    // Re-crear sin freeze
+    const obj = Object.create(ArchitectureConfig.prototype);
+    obj.logicalAddressBits = logicalBits;
+    obj.physicalAddressBits = physicalBits;
+    obj.pageSize = pageSize;
+    obj.offsetBits = Math.log2(pageSize);
+    obj.segmentBits = Math.floor((logicalBits - obj.offsetBits) / 2);
+    obj.pageBits = logicalBits - obj.segmentBits - obj.offsetBits;
+    obj.maxSegments = Math.pow(2, obj.segmentBits);
+    obj.pagesPerSegment = Math.pow(2, obj.pageBits);
+    obj.totalRAMBytes = Math.pow(2, physicalBits);
+    obj.totalFrames = Math.floor(obj.totalRAMBytes / pageSize);
+
+    Object.freeze(obj);
+    ArchitectureConfig._instance = obj;
+    return obj;
+  }
+
+  /**
    * Getters de configuración
    */
   getLogicalAddressBits() {

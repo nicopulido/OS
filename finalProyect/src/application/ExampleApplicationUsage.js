@@ -253,9 +253,17 @@ export async function exampleAPIUsage() {
     console.log('3. CREAR PROCESOS');
     console.log('─'.repeat(60));
     const p1 = api.createProcessWithDefaults('Chrome');
+    if (!p1.success) {
+      console.log(`  ❌ Error al crear proceso: ${p1.error}\n`);
+      throw new Error(p1.error);
+    }
     console.log(`  Proceso ${p1.pid}: ${p1.processDTO.name} - ${p1.processDTO.allocatedMemory} bytes\n`);
 
     const p2 = api.createProcessWithDefaults('VSCode');
+    if (!p2.success) {
+      console.log(`  ❌ Error al crear proceso: ${p2.error}\n`);
+      throw new Error(p2.error);
+    }
     console.log(`  Proceso ${p2.pid}: ${p2.processDTO.name} - ${p2.processDTO.allocatedMemory} bytes\n`);
 
     // 4. Estado de memoria

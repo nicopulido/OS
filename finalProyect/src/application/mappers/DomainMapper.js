@@ -39,8 +39,8 @@ export class DomainMapper {
     const processDTOs = processes.map(p => this.processToDTO(p, ram));
     const ramStatus = ram ? this.ramStatusToDTO(ram) : null;
     
-    const usedFrames = ram?.getAllocatedFrames?.() || 0;
-    const totalFrames = ram?.getTotalFrames?.() || 1;
+    const usedFrames = ram?.allocatedFrames || 0;
+    const totalFrames = ram?.config?.getTotalFrames?.() || 1;
     const usedBytes = (usedFrames * ram?.getFrameSize?.()) || 0;
     const totalBytes = ram?.getTotalRAMBytes?.() || 1;
 
@@ -61,7 +61,7 @@ export class DomainMapper {
   static ramStatusToDTO(ram) {
     const config = ram.config;
     const totalFrames = config.getTotalFrames();
-    const allocatedFrames = ram.getAllocatedFrames?.() || 0;
+    const allocatedFrames = ram.allocatedFrames || 0;
     const frameSize = config.getPageSize();
     
     const totalRAM = totalFrames * frameSize;
@@ -87,11 +87,11 @@ export class DomainMapper {
     const info = frame.getInfo?.();
     return new FrameDTO(
       frameNumber,
-      frame.isAllocated?.() || false,
-      info?.ownerPid || null,
-      info?.segmentId || null,
-      info?.pageId || null,
-      frame.isDirty?.() || false
+      frame.isOccupied?.() || false,
+      info?.processId ?? null,
+      info?.segmentId ?? null,
+      info?.pageNumber ?? null,
+      false
     );
   }
 
@@ -143,13 +143,13 @@ export class DomainMapper {
       canExecute: segment.canExecute?.() || false,
     };
 
-    const sizeBytes = segment.getSize?.() || 0;
-    const pageSize = segment.pageTable?.config?.getPageSize?.() || 4096;
-    const pageCount = Math.ceil(sizeBytes / pageSize);
+    const sizeBytes = segment.getSizeBytes?.() || 0;
+    const pageTable2 = segment.getPageTable?.();
+    const pageCount = pageTable2?.getPageCount?.() || (pages ? pages.length : 0);
 
     return new SegmentDTO(
       segmentId,
-      segment.getType?.() || 'UNKNOWN',
+      segment.getName?.() || 'UNKNOWN',
       sizeBytes,
       pageCount,
       permissions,

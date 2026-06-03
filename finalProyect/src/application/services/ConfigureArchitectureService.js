@@ -21,9 +21,25 @@
  */
 
 import ArchitectureConfig from '../../domain/architecture/ArchitectureConfig.js';
+import RAM from '../../domain/memory/RAM.js';
+import OperatingSystem from '../../domain/operating-system/OperatingSystem.js';
 
 export class ConfigureArchitectureService {
   constructor() {
+    this.config = ArchitectureConfig.getInstance();
+  }
+
+  /**
+   * Reconfigura la arquitectura con nuevos valores
+   * @param {number} logicalBits
+   * @param {number} physicalBits
+   * @param {number} pageSize
+   */
+  configure(logicalBits, physicalBits, pageSize) {
+    // Resetear singletons dependientes antes de reconfigurar
+    RAM.reset();
+    OperatingSystem.reset();
+    ArchitectureConfig.reconfigure(logicalBits, physicalBits, pageSize);
     this.config = ArchitectureConfig.getInstance();
   }
 

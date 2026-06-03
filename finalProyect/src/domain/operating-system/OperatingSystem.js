@@ -57,6 +57,47 @@ class OperatingSystem {
   }
 
   /**
+   * Resetea el singleton
+   * @static
+   */
+  static reset() {
+    OperatingSystem._instance = null;
+  }
+
+  /**
+   * Registra un proceso en el sistema (usado por servicios de aplicación)
+   * @param {Process} process - Proceso a registrar
+   */
+  registerProcess(process) {
+    const pid = process.getPid();
+    this.processes.set(pid, process);
+    this.totalProcessesCreated++;
+  }
+
+  /**
+   * Remueve un proceso del sistema
+   * @param {number} pid
+   */
+  removeProcess(pid) {
+    if (this.processes.has(pid)) {
+      this.processes.delete(pid);
+      this.totalProcessesTerminated++;
+      
+      if (this.runningProcess?.getPid() === pid) {
+        this.runningProcess = null;
+      }
+    }
+  }
+
+  /**
+   * Obtiene el siguiente PID
+   * @returns {number}
+   */
+  getNextPid() {
+    return this.nextPid++;
+  }
+
+  /**
    * Crea un nuevo proceso
    * @param {string} processName - Nombre del proceso
    * @returns {Process} - El proceso creado

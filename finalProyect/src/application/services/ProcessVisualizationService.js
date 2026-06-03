@@ -62,7 +62,7 @@ export class ProcessVisualizationService {
 
       if (segmentTable) {
         for (const segment of segmentTable.getAllSegments?.() || []) {
-          const pages = segment.getPageTable?.getAllPages?.() || [];
+          const pages = segment.getPageTable?.()?.getAllPages?.() || [];
           totalPages += pages.length;
           
           for (const page of pages) {

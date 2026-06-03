@@ -72,6 +72,14 @@ class RAM {
   }
 
   /**
+   * Resetea el singleton para recrear RAM con nueva configuración
+   * @static
+   */
+  static reset() {
+    RAM._instance = null;
+  }
+
+  /**
    * Lee datos desde una dirección física
    * @param {PhysicalAddress} physicalAddress
    * @param {number} size - Bytes a leer
@@ -150,12 +158,12 @@ class RAM {
    * @param {number} frameNumber
    * @param {number} processId
    */
-  allocateFrame(frameNumber, processId) {
+  allocateFrame(frameNumber, processId, segmentId = null, pageNumber = null) {
     const frame = this.getFrame(frameNumber);
     if (frame.isOccupied()) {
       throw new Error(`Frame ${frameNumber} ya está ocupado`);
     }
-    frame.allocate(processId);
+    frame.allocate(processId, segmentId, pageNumber);
     this.allocatedFrames++;
   }
 
@@ -176,24 +184,39 @@ class RAM {
    * Obtiene cantidad de marcos disponibles
    * @returns {number}
    */
-  getAvailableFrames() {
+  getAvailableFramesCount() {
     return this.config.getTotalFrames() - this.allocatedFrames;
   }
 
   /**
-   * Obtiene cantidad de marcos asignados
-   * @returns {number}
+   * Obtiene array de números de marcos disponibles
+   * @returns {Array<number>}
    */
-  getAllocatedFrames() {
-    return this.allocatedFrames;
+  getAvailableFrames() {
+    const available = [];
+    for (let i = 0; i < this.config.getTotalFrames(); i++) {
+      const frame = this.frames.get(i);
+      if (frame && !frame.isOccupied?.()) {
+        available.push(i);
+      }
+    }
+    return available;
   }
 
   /**
-   * Obtiene cantidad total de marcos
+   * Obtiene tamaño de un marco
    * @returns {number}
    */
-  getTotalFrames() {
-    return this.config.getTotalFrames();
+  getFrameSize() {
+    return this.config.getPageSize();
+  }
+
+  /**
+   * Obtiene tamaño total de RAM en bytes
+   * @returns {number}
+   */
+  getTotalRAMBytes() {
+    return this.config.getTotalRAMBytes();
   }
 
   /**

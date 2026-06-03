@@ -30,10 +30,12 @@ class LogicalAddress {
     this.value = Math.floor(value);
     this.config = ArchitectureConfig.getInstance();
     
-    // Cache de componentes (computed lazily)
-    this._segmentId = null;
-    this._pageId = null;
-    this._offset = null;
+    // Computar componentes eagerly (antes del freeze)
+    const shift = this.config.getPageBits() + this.config.getOffsetBits();
+    const masks = this.config.getMasks();
+    this._segmentId = (this.value >> shift) & masks.segmentMask;
+    this._pageId = (this.value >> this.config.getOffsetBits()) & masks.pageMask;
+    this._offset = this.value & masks.offsetMask;
 
     Object.freeze(this);
   }
@@ -69,15 +71,20 @@ class LogicalAddress {
   }
 
   /**
+   * Factory: Crear desde un valor numérico
+   * @static
+   * @param {number} value - Valor de dirección lógica
+   * @returns {LogicalAddress}
+   */
+  static fromValue(value) {
+    return new LogicalAddress(value);
+  }
+
+  /**
    * Extrae el ID del segmento
    * @returns {number}
    */
   getSegmentId() {
-    if (this._segmentId === null) {
-      const shift = this.config.getPageBits() + this.config.getOffsetBits();
-      const masks = this.config.getMasks();
-      this._segmentId = (this.value >> shift) & masks.segmentMask;
-    }
     return this._segmentId;
   }
 
@@ -86,11 +93,6 @@ class LogicalAddress {
    * @returns {number}
    */
   getPageId() {
-    if (this._pageId === null) {
-      const shift = this.config.getOffsetBits();
-      const masks = this.config.getMasks();
-      this._pageId = (this.value >> shift) & masks.pageMask;
-    }
     return this._pageId;
   }
 
@@ -99,10 +101,6 @@ class LogicalAddress {
    * @returns {number}
    */
   getOffset() {
-    if (this._offset === null) {
-      const masks = this.config.getMasks();
-      this._offset = this.value & masks.offsetMask;
-    }
     return this._offset;
   }
 
