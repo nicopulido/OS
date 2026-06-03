@@ -29,17 +29,17 @@ class ArchitectureConfig {
 
     // CONFIGURACIÓN DE DIRECCIONAMIENTO
     this.logicalAddressBits = 32;      // Bits totales de dirección lógica
-    this.physicalAddressBits = 32;     // Bits totales de dirección física
+    this.physicalAddressBits = 24;     // Bits totales de dirección física
 
     // CONFIGURACIÓN DE SEGMENTACIÓN
-    this.maxSegments = 256;            // 2^8 segmentos
-    this.segmentBits = 8;              // Bits para ID de segmento
+    this.maxSegments = 1024;           // 2^10 segmentos
+    this.segmentBits = 10;             // Bits para ID de segmento
 
     // CONFIGURACIÓN DE PAGINACIÓN
     this.pageSize = 4096;              // Bytes por página (4 KiB)
     this.offsetBits = 12;              // Bits para offset (log2(4096) = 12)
-    this.pageBits = 8;                 // Bits para ID de página (8 bits)
-    this.pagesPerSegment = 256;        // 2^8 páginas por segmento
+    this.pageBits = 10;                // Bits para ID de página (10 bits)
+    this.pagesPerSegment = 1024;       // 2^10 páginas por segmento
 
     // MEMORIA FÍSICA
     this.totalRAMBytes = 16777216;     // 16 MiB

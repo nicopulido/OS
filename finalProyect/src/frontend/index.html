@@ -112,27 +112,17 @@
     <!-- ===== 1. Arquitectura ===== -->
     <div class="card">
       <h2>1. Arquitectura del Sistema</h2>
-      <div class="form-group">
-        <label>Bits Dirección Lógica</label>
-        <input type="number" id="logicBits" value="32">
-      </div>
-      <div class="form-group">
-        <label>Bits Dirección Física</label>
-        <input type="number" id="physBits" value="32">
-      </div>
-      <div class="form-group">
-        <label>Tamaño de Página (Bytes)</label>
-        <input type="number" id="pageSize" value="4096">
-      </div>
-      <button id="btnConfig">Configurar</button>
-      <div id="archInfo" style="margin-top: 15px; display: none;">
-        <h3>Resultado:</h3>
+      <div id="archInfo" style="margin-top: 15px;">
+        <p><strong>Configuración Establecida:</strong></p>
         <ul>
-          <li>Segment Bits: <span id="infoSegBits"></span></li>
-          <li>Page Bits: <span id="infoPageBits"></span></li>
-          <li>Offset Bits: <span id="infoOffsetBits"></span></li>
-          <li>Máx Segmentos: <span id="infoMaxSegs"></span></li>
-          <li>Máx Páginas por Segmento: <span id="infoMaxPages"></span></li>
+          <li>Bits Dirección Lógica: <span id="infoLogicBits">32</span></li>
+          <li>Bits Dirección Física: <span id="infoPhysBits">24</span></li>
+          <li>Tamaño de Página: <span id="infoPageSize">4096</span> Bytes</li>
+          <li>Segment Bits: <span id="infoSegBits">10</span></li>
+          <li>Page Bits: <span id="infoPageBits">10</span></li>
+          <li>Offset Bits: <span id="infoOffsetBits">12</span></li>
+          <li>Máx Segmentos: <span id="infoMaxSegs">1024</span></li>
+          <li>Máx Páginas por Segmento: <span id="infoMaxPages">1024</span></li>
         </ul>
       </div>
     </div>
@@ -271,39 +261,22 @@
       segmentTableService = new SegmentTableService();
     }
 
-    // ========== 1. Arquitectura ==========
-    document.getElementById('btnConfig').addEventListener('click', () => {
-      const logicBits = parseInt(document.getElementById('logicBits').value);
-      const physBits = parseInt(document.getElementById('physBits').value);
-      const pageSizeVal = parseInt(document.getElementById('pageSize').value);
-
-      try {
-        configService.configure(logicBits, physBits, pageSizeVal);
-        reinitServices();
-      } catch (e) {
-        console.warn('configure() error:', e.message);
-      }
-
+    // ========== 1. Arquitectura (Carga de Información) ==========
+    function loadArchitectureInfo() {
       const info = configService.getArchitectureInfo();
       archData = info;
-
+      document.getElementById('infoLogicBits').textContent = info.addressingScheme.logicalAddressBits;
+      document.getElementById('infoPhysBits').textContent = info.addressingScheme.physicalAddressBits;
+      document.getElementById('infoPageSize').textContent = info.paging.pageSize;
       document.getElementById('infoSegBits').textContent = info.segmentation.segmentIdBits;
       document.getElementById('infoPageBits').textContent = info.paging.pageIdBits;
       document.getElementById('infoOffsetBits').textContent = info.paging.offsetBits;
       document.getElementById('infoMaxSegs').textContent = info.segmentation.maxSegments;
       document.getElementById('infoMaxPages').textContent = info.paging.pagesPerSegment;
-
-      document.getElementById('logicBits').value = info.addressingScheme.logicalAddressBits;
-      document.getElementById('physBits').value = info.addressingScheme.physicalAddressBits;
-      document.getElementById('pageSize').value = info.paging.pageSize;
-
-      document.getElementById('archInfo').style.display = 'block';
-      refreshProcessList();
-      refreshRAM();
-    });
-
+    }
+    
     // Init arquitectura
-    document.getElementById('btnConfig').click();
+    loadArchitectureInfo();
 
     // ========== 2. Crear Proceso ==========
     document.getElementById('btnCreateProcess').addEventListener('click', () => {
@@ -497,7 +470,39 @@
       }
     });
 
+    // ========== Procesos por Defecto ==========
+    function createDefaultProcesses() {
+      const defaults = [
+        { name: 'Navegador Web', segments: [
+          { type: 'CODE', sizeBytes: 16384 },
+          { type: 'DATA', sizeBytes: 32768 },
+          { type: 'STACK', sizeBytes: 8192 },
+          { type: 'HEAP', sizeBytes: 65536 }
+        ]},
+        { name: 'Editor de Código', segments: [
+          { type: 'CODE', sizeBytes: 12288 },
+          { type: 'DATA', sizeBytes: 16384 },
+          { type: 'STACK', sizeBytes: 8192 },
+          { type: 'HEAP', sizeBytes: 24576 }
+        ]},
+        { name: 'Servicio de Audio', segments: [
+          { type: 'CODE', sizeBytes: 4096 },
+          { type: 'DATA', sizeBytes: 8192 },
+          { type: 'STACK', sizeBytes: 4096 },
+          { type: 'HEAP', sizeBytes: 16384 }
+        ]}
+      ];
+      
+      defaults.forEach(proc => {
+        const res = createProcessService.createProcess(proc.name, proc.segments);
+        if (res.success) {
+           loadProcessService.loadProcessIntoMemory(res.pid, 'preload');
+        }
+      });
+    }
+
     // ========== Init ==========
+    createDefaultProcesses();
     refreshProcessList();
     refreshRAM();
     setInterval(() => { refreshRAM(); refreshProcessList(); }, 2000);
