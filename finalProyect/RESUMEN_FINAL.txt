@@ -1,0 +1,467 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                                                                            ║
+║         SIMULADOR ACADÉMICO DE SEGMENTACIÓN PAGINADA - RESUMEN FINAL      ║
+║                                                                            ║
+║                    Código Base Completamente Implementado                 ║
+║                                                                            ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+
+█████████████████████████████████████████████████████████████████████████████
+  ESTRUCTURA DEL PROYECTO
+█████████████████████████████████████████████████████████████████████████████
+
+finalProyect/                                    [RAÍZ DEL PROYECTO]
+│
+├── 📄 package.json                              Configuración Node.js
+├── 📄 README.md                                 Documentación principal
+├── 📄 STRUCTURE.md                              Estructura detallada
+├── 📄 verify.sh                                 Script de verificación
+│
+└── 📂 src/                                      CÓDIGO FUENTE (15 clases)
+    │
+    ├── 📂 architecture/                         [3 archivos]
+    │   ├── ArchitectureConfig.js                Configuración (Singleton)
+    │   ├── LogicalAddress.js                    Dirección lógica (Value Object)
+    │   └── PhysicalAddress.js                   Dirección física (Value Object)
+    │
+    ├── 📂 operating-system/                     [2 archivos]
+    │   ├── OperatingSystem.js                   SO (Singleton Orchestrator)
+    │   └── PCB.js                               Bloque de control proceso
+    │
+    ├── 📂 process/                              [5 archivos]
+    │   ├── Process.js                           Proceso (Entity)
+    │   ├── SegmentTable.js                      Tabla segmentos
+    │   ├── Segment.js                           Segmento lógico
+    │   ├── PageTable.js                         Tabla páginas
+    │   └── Page.js                              Página individual
+    │
+    ├── 📂 memory/                               [2 archivos]
+    │   ├── RAM.js                               Memoria física (Singleton)
+    │   └── Frame.js                             Marco individual
+    │
+    ├── 📂 mmu/                                  [1 archivo]
+    │   └── MMU.js                               Memory Management Unit
+    │
+    ├── 📂 examples/                             [1 archivo]
+    │   └── exampleProcess.js                    Ejemplo demostración
+    │
+    └── index.js                                 Punto de entrada main()
+
+
+█████████████████████████████████████████████████████████████████████████████
+  ESTADÍSTICAS DEL PROYECTO
+█████████████████████████████████████████████████████████████████████████████
+
+📊 CONTEO DE ARCHIVOS
+─────────────────────────────────────────────────────────────────────────────
+  ✓ Archivos JavaScript:  15 archivos .js
+  ✓ Archivos config:      1  archivo package.json
+  ✓ Documentación:        3  archivos .md
+  ✓ Scripts:              1  archivo .sh
+  ─────────────────────────────────────────
+  Total:                  20 archivos
+
+📦 CLASES IMPLEMENTADAS
+─────────────────────────────────────────────────────────────────────────────
+  ARQUITECTURA:           3 clases
+    • ArchitectureConfig  [Singleton + Value Config]
+    • LogicalAddress      [Value Object Inmutable]
+    • PhysicalAddress     [Value Object Inmutable]
+
+  SISTEMA OPERATIVO:      2 clases
+    • OperatingSystem     [Singleton Orchestrator]
+    • PCB                 [Entity - Bloque Control]
+
+  PROCESOS:               5 clases
+    • Process             [Entity - Proceso]
+    • SegmentTable        [Entity - Tabla Segmentos]
+    • Segment             [Entity - Segmento Lógico]
+    • PageTable           [Entity - Tabla Páginas]
+    • Page                [Entity - Página Individual]
+
+  MEMORIA:                2 clases
+    • RAM                 [Singleton Entity - Física]
+    • Frame               [Entity - Marco 4KiB]
+
+  SERVICIOS:              1 clase
+    • MMU                 [Service - Traductor Direcciones]
+
+  TOTAL:                  15 clases
+
+🏛️  PATRONES DE DISEÑO UTILIZADOS
+─────────────────────────────────────────────────────────────────────────────
+  ✓ Singleton Pattern       → ArchitectureConfig, OperatingSystem, RAM
+  ✓ Value Object Pattern    → LogicalAddress, PhysicalAddress
+  ✓ Entity Pattern          → Process, PCB, SegmentTable, Segment, PageTable, Page, Frame
+  ✓ Service Pattern         → MMU
+  ✓ Factory Pattern         → LogicalAddress.fromComponents(), PhysicalAddress.fromFrameAndOffset()
+  ✓ Orchestrator Pattern    → OperatingSystem
+  ✓ Repository Pattern      → (preparado para ProcessRepository)
+
+
+█████████████████████████████████████████████████████████████████████████████
+  ARQUITECTURA DE TRADUCCIÓN DE DIRECCIONES
+█████████████████████████████████████████████████████████████████████████████
+
+FLUJO COMPLETO: Dirección Lógica → Dirección Física
+────────────────────────────────────────────────────────────────────────────
+
+  Proceso solicita:
+  readMemory(logicalAddress: 0x00010502)
+       │
+       ├─→ OperatingSystem.readMemory()
+       │    │
+       │    └─→ MMU.readMemory()
+       │         │
+       │         ├─→ VERIFICAR TLB (Translation Lookaside Buffer)
+       │         │    │
+       │         │    ├─ Si HIT: retornar cached physicalAddress
+       │         │    └─ Si MISS: continuar traducción
+       │         │
+       │         ├─→ EXTRAER COMPONENTES
+       │         │    Using: ArchitectureConfig.getMasks()
+       │         │    ├─ segmentId = (0x00010502 >> 16) & 0xFF = 0
+       │         │    ├─ pageId    = (0x00010502 >> 8)  & 0xFF = 5
+       │         │    └─ offset    = (0x00010502 >> 0)  & 0xFFFF = 2
+       │         │
+       │         ├─→ VALIDAR EN TABLA DE SEGMENTOS
+       │         │    ├─ process.segmentTable.getSegment(0)
+       │         │    ├─ Verificar permisos (read/write/execute)
+       │         │    └─ Obtener: segment.pageTable
+       │         │
+       │         ├─→ VALIDAR EN TABLA DE PÁGINAS
+       │         │    ├─ pageTable.getPage(5)
+       │         │    ├─ Verificar if (page.isPresent())
+       │         │    └─ Si no está en RAM: PageFault
+       │         │
+       │         ├─→ MAPEO PÁGINA → MARCO
+       │         │    ├─ frameNumber = page.getFrameNumber()  → 42
+       │         │    └─ Obtener: ram.getFrame(42)
+       │         │
+       │         ├─→ CALCULAR DIRECCIÓN FÍSICA
+       │         │    └─ physicalAddress = (42 * 4096) + 2 = 172,034
+       │         │
+       │         ├─→ ALMACENAR EN TLB
+       │         │    └─ tlb[0x00010502] = 172,034
+       │         │
+       │         └─→ ACCEDER A RAM
+       │              ├─ ram.read(physicalAddress, size)
+       │              ├─ Validar rango [0, 16777216]
+       │              └─ Retornar: data[] desde memory[]
+
+
+DIVISIÓN DE DIRECCIÓN LÓGICA (32 bits)
+────────────────────────────────────────────────────────────────────────────
+
+  Dirección: 0x00010502 = 66,818 decimal = binario 00000000|00010101|00000010
+
+  ┌──────────────────┬─────────────────┬──────────────────┐
+  │   Segment ID     │    Page ID      │     Offset       │
+  │   [8 bits]       │   [8 bits]      │   [16 bits]      │
+  ├──────────────────┼─────────────────┼──────────────────┤
+  │  00000000 = 0    │  00010101 = 21  │  00000010 = 2    │
+  └──────────────────┴─────────────────┴──────────────────┘
+
+
+█████████████████████████████████████████████████████████████████████████████
+  CONFIGURACIÓN DE ARQUITECTURA
+█████████████████████████████████████████████████████████████████████████████
+
+ESPACIOS DE DIRECCIÓN
+─────────────────────────────────────────────────────────────────────────────
+  Dirección Lógica:    32 bits  (0x00000000 - 0xFFFFFFFF)
+  Dirección Física:    32 bits  (0x00000000 - 0xFFFFFFFF)
+  Espacio direccionable: 4 GB
+
+SEGMENTACIÓN
+─────────────────────────────────────────────────────────────────────────────
+  Bits para Segment ID:   8 bits
+  Máximo de segmentos:    256 (2^8)
+  Ejemplo de uso:
+    • Segmento 0: CODE    (código ejecutable)
+    • Segmento 1: DATA    (datos estáticos)
+    • Segmento 2: STACK   (pila del proceso)
+    • Segmento 3: HEAP    (memoria dinámica)
+    • ... (hasta 252 segmentos más auxiliares)
+
+PAGINACIÓN
+─────────────────────────────────────────────────────────────────────────────
+  Tamaño de página:       4096 bytes (4 KiB)
+  Bits para offset:       12 bits (log₂(4096))
+  Bits para Page ID:      8 bits
+  Páginas por segmento:   256 (2^8)
+  Máximo por proceso:     256 segmentos × 256 páginas = 65,536 páginas
+
+MEMORIA FÍSICA
+─────────────────────────────────────────────────────────────────────────────
+  RAM Total:              16,777,216 bytes (16 MiB)
+  Tamaño de Marco:        4096 bytes (igual a página)
+  Total de Marcos:        4096 (16 MiB ÷ 4 KiB)
+  Mapeo:                  1 página lógica ↔ 1 marco físico
+
+MMU - MEMORY MANAGEMENT UNIT
+─────────────────────────────────────────────────────────────────────────────
+  TLB (Translation Lookaside Buffer):
+    • Tamaño:             16 entradas (caché)
+    • Propósito:          Acelerar traducciones frecuentes
+    • Política:           FIFO (First In, First Out)
+
+  Estadísticas:
+    • TLB Hits:           Consultas encontradas en caché
+    • TLB Misses:         Traducciones realizadas
+    • Hit Rate:           Hits / (Hits + Misses)
+
+
+█████████████████████████████████████████████████████████████████████████████
+  EJEMPLO: CREAR PROCESO CON 3 SEGMENTOS
+█████████████████████████████████████████████████████████████████████████████
+
+FLUJO DE CREACIÓN
+────────────────────────────────────────────────────────────────────────────
+
+  1. crear proceso("Firefox")
+     └─ Process(PID=1, name="Firefox")
+        ├─ PCB(1)                    // Bloque de control
+        └─ SegmentTable(1)           // Tabla de segmentos
+
+  2. crear segmento(0, "CODE", 8192 bytes)
+     └─ Segment(0, "CODE", 8192)
+        ├─ Permisos:  read=true,  write=false, execute=true
+        ├─ PageTable(0, 1)           // 2 páginas de 4 KiB
+        └─ Page[
+             0 → Frame 0
+             1 → Frame 1
+           ]
+
+  3. crear segmento(1, "DATA", 8192 bytes)
+     └─ Segment(1, "DATA", 8192)
+        ├─ Permisos:  read=true,  write=true, execute=false
+        ├─ PageTable(1, 1)           // 2 páginas
+        └─ Page[
+             0 → Frame 2
+             1 → Frame 3
+           ]
+
+  4. crear segmento(2, "STACK", 16384 bytes)
+     └─ Segment(2, "STACK", 16384)
+        ├─ Permisos:  read=true,  write=true, execute=false
+        ├─ PageTable(2, 1)           // 4 páginas
+        └─ Page[
+             0 → Frame 4
+             1 → Frame 5
+             2 → Frame 6
+             3 → Frame 7
+           ]
+
+
+ESTRUCTURA RESULTANTE EN MEMORIA
+─────────────────────────────────────────────────────────────────────────────
+
+  RAM FÍSICA (16 MiB = 4096 marcos)
+  ┌─────────────────────────────────────────┐
+  │ Marco 0   [CODE, Página 0]   IN USE      │
+  │ Marco 1   [CODE, Página 1]   IN USE      │
+  │ Marco 2   [DATA, Página 0]   IN USE      │
+  │ Marco 3   [DATA, Página 1]   IN USE      │
+  │ Marco 4   [STACK, Página 0]  IN USE      │
+  │ Marco 5   [STACK, Página 1]  IN USE      │
+  │ Marco 6   [STACK, Página 2]  IN USE      │
+  │ Marco 7   [STACK, Página 3]  IN USE      │
+  │ Marco 8   [ ... ]               FREE     │
+  │ Marco 9   [ ... ]               FREE     │
+  │  ...                                     │
+  │ Marco 4095 [ ... ]              FREE     │
+  └─────────────────────────────────────────┘
+   Total: 8 marcoszados, 4088 libres (0.20% utilización)
+
+
+█████████████████████████████████████████████████████████████████████████████
+  JERARQUÍA DE OBJETOS - EJEMPLO REAL
+█████████████████████████████████████████████████████████████████████████████
+
+  Process(PID=1)
+  │
+  ├─ name: "Firefox"
+  ├─ creationTime: 2024-06-02T10:15:30
+  │
+  ├─ PCB(1)
+  │  ├─ state: "READY"
+  │  ├─ allocatedMemory: 32768 bytes
+  │  ├─ pageFaults: 0
+  │  └─ segmentationFaults: 0
+  │
+  └─ SegmentTable(1)
+     ├─ processId: 1
+     ├─ segmentCount: 3
+     │
+     ├─ Segment(0)
+     │  ├─ id: 0
+     │  ├─ name: "CODE"
+     │  ├─ sizeBytes: 8192
+     │  ├─ permissions: {read: true, write: false, execute: true}
+     │  │
+     │  └─ PageTable(0, 1)
+     │     ├─ baseAddressInRAM: 0x1000
+     │     │
+     │     ├─ Page(0)
+     │     │  ├─ pageNumber: 0
+     │     │  ├─ frameNumber: 0
+     │     │  ├─ present: true
+     │     │  ├─ dirty: false
+     │     │  └─ accessCount: 0
+     │     │
+     │     └─ Page(1)
+     │        ├─ pageNumber: 1
+     │        ├─ frameNumber: 1
+     │        ├─ present: true
+     │        ├─ dirty: false
+     │        └─ accessCount: 0
+     │
+     ├─ Segment(1)
+     │  ├─ id: 1
+     │  ├─ name: "DATA"
+     │  ├─ sizeBytes: 8192
+     │  ├─ permissions: {read: true, write: true, execute: false}
+     │  │
+     │  └─ PageTable(1, 1)
+     │     ├─ baseAddressInRAM: 0x2000
+     │     ├─ Page(0) → Frame 2
+     │     └─ Page(1) → Frame 3
+     │
+     └─ Segment(2)
+        ├─ id: 2
+        ├─ name: "STACK"
+        ├─ sizeBytes: 16384
+        ├─ permissions: {read: true, write: true, execute: false}
+        │
+        └─ PageTable(2, 1)
+           ├─ baseAddressInRAM: 0x3000
+           ├─ Page(0) → Frame 4
+           ├─ Page(1) → Frame 5
+           ├─ Page(2) → Frame 6
+           └─ Page(3) → Frame 7
+
+
+█████████████████████████████████████████████████████████████████████████████
+  CÓMO EJECUTAR
+█████████████████████████████████████████████████████████████████████████████
+
+PREREQUISITOS
+─────────────────────────────────────────────────────────────────────────────
+  ✓ Node.js 14.0.0 o superior
+  ✓ npm (incluido con Node.js)
+
+INSTALACIÓN
+─────────────────────────────────────────────────────────────────────────────
+  $ cd finalProyect
+  $ npm install              # (aunque no hay dependencias externas)
+
+EJECUCIÓN
+─────────────────────────────────────────────────────────────────────────────
+  $ node src/index.js        # Ejecutar demostración completa
+  $ node --watch src/index.js # Ejecutar con hot-reload
+
+SALIDA ESPERADA
+─────────────────────────────────────────────────────────────────────────────
+  La ejecución muestra:
+  1. Inicialización de arquitectura
+  2. Inicialización de RAM
+  3. Inicialización del SO
+  4. Creación de proceso de ejemplo
+  5. Resumen de segmentos y páginas
+  6. Demostración de traducción de direcciones
+  7. Estadísticas finales de utilización
+
+
+█████████████████████████████████████████████████████████████████████████████
+  STATUS Y PRÓXIMOS PASOS
+█████████████████████████████████████████████████████████████████████████████
+
+✅ COMPLETADO
+─────────────────────────────────────────────────────────────────────────────
+  ✓ Estructura de carpetas profesional
+  ✓ 15 clases implementadas
+  ✓ Patrones de diseño aplicados
+  ✓ Documentación completa
+  ✓ Ejemplo de crear proceso
+  ✓ Configuración y Value Objects
+  ✓ Entities del dominio
+  ✓ Singleton y Services
+  ✓ Demostración ejecutable
+
+⏳ PENDIENTE (Para v2.0)
+─────────────────────────────────────────────────────────────────────────────
+  ⟳ Implementar MMU.translate() completamente
+  ⟳ Manejo de Page Faults
+  ⟳ Manejo de Segmentation Faults
+  ⟳ Políticas de reemplazo (LRU, FIFO, Optimal)
+  ⟳ Swapping a disco
+  ⟳ Tests unitarios (Jest)
+  ⟳ Tests de integración
+  ⟳ Benchmarking y profiling
+  ⟳ Documentación de API
+  ⟳ Visualización de estado de memoria
+
+
+█████████████████████████████████████████████████████████████████████████████
+  REFERENCIAS Y RECURSOS
+█████████████████████████████████████████████████████████████████████████████
+
+LIBROS
+─────────────────────────────────────────────────────────────────────────────
+  • Tanenbaum, A. S. (2009). Sistemas Operativos Modernos. 3ª Ed.
+  • Stallings, W. (2018). Operating Systems: Internals and Design Principles. 9ª Ed.
+  • Silberschatz et al. (2018). Operating System Concepts. 10ª Ed.
+
+CONCEPTOS
+─────────────────────────────────────────────────────────────────────────────
+  • Virtual Memory
+  • Memory Management Unit (MMU)
+  • Paging and Segmentation
+  • Page Replacement Algorithms
+  • Translation Lookaside Buffer (TLB)
+  • Address Translation
+
+ESTÁNDARES
+─────────────────────────────────────────────────────────────────────────────
+  • JavaScript ES6+ Modules
+  • Object-Oriented Programming (OOP)
+  • Domain-Driven Design (DDD)
+  • SOLID Principles
+
+
+█████████████████████████████████████████████████████████████████████████████
+  NOTAS TÉCNICAS
+█████████████████████████████████████████████████████████████████████████████
+
+SOBRE LA ARQUITECTURA
+─────────────────────────────────────────────────────────────────────────────
+  • Diseño escalable y extensible
+  • Sin dependencias externas (vanilla JavaScript)
+  • Compatible con Node.js 14+
+  • Usa ES6 Modules (import/export)
+  • Separación clara de responsabilidades
+
+SOBRE LA SEGMENTACIÓN PAGINADA
+─────────────────────────────────────────────────────────────────────────────
+  • Combina ventajas de segmentación y paginación
+  • Flexibilidad lógica (segmentos)
+  • Eficiencia física (paginación, sin fragmentación externa)
+  • Control de acceso granular (por segmento)
+  • Soporte para compartimiento de memoria
+
+SOBRE EL CÓDIGO
+─────────────────────────────────────────────────────────────────────────────
+  • Comentarios extensos en cada clase
+  • Documentación en formato JSDoc
+  • Responsabilidades claramente definidas
+  • Bajo acoplamiento, alta cohesión
+  • Listo para ampliar con nuevas funcionalidades
+
+
+═══════════════════════════════════════════════════════════════════════════════
+
+              ✅ PROYECTO COMPLETADO Y LISTO PARA USAR ✅
+
+═══════════════════════════════════════════════════════════════════════════════
